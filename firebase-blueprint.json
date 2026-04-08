@@ -1,0 +1,162 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a user in the HostelHub system (student, manager, guest, or admin).",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["student", "manager", "guest", "admin"] },
+        "displayName": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "phoneVerified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Hostel": {
+      "title": "Hostel",
+      "description": "Represents a hostel property managed by a verified manager.",
+      "type": "object",
+      "properties": {
+        "managerId": { "type": "string", "description": "UID of the user (manager) who owns/manages this hostel", "$ref": "#/entities/User" },
+        "name": { "type": "string" },
+        "location": { "type": "string", "description": "General area, e.g., Fiaso, Berlin Top" },
+        "address": { "type": "string", "description": "Specific physical address" },
+        "distanceFromCampus": { "type": "number", "description": "Distance in kilometers" },
+        "amenities": { "type": "array", "items": { "type": "string" } },
+        "images": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "rating": { "type": "number", "description": "Average rating from reviews" },
+        "isVerified": { "type": "boolean", "description": "Whether the hostel has been verified by admin" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["managerId", "name", "location", "address", "createdAt"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "Represents a specific room or room type within a hostel.",
+      "type": "object",
+      "properties": {
+        "hostelId": { "type": "string", "description": "ID of the parent hostel", "$ref": "#/entities/Hostel" },
+        "roomNumber": { "type": "string", "description": "Identifier for the specific room" },
+        "type": { "type": "string", "enum": ["1-in-a-room", "2-in-a-room", "3-in-a-room", "4-in-a-room"] },
+        "pricePerSemester": { "type": "number" },
+        "capacity": { "type": "number", "description": "Total beds in the room" },
+        "occupiedBeds": { "type": "number", "description": "Number of beds currently booked/occupied" },
+        "isAvailable": { "type": "boolean", "description": "True if occupiedBeds < capacity" }
+      },
+      "required": ["hostelId", "roomNumber", "type", "pricePerSemester", "capacity", "occupiedBeds", "isAvailable"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a student's reservation for a room.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the student booking the room", "$ref": "#/entities/User" },
+        "hostelId": { "type": "string", "description": "ID of the hostel", "$ref": "#/entities/Hostel" },
+        "roomId": { "type": "string", "description": "ID of the specific room", "$ref": "#/entities/Room" },
+        "semester": { "type": "string", "description": "E.g., '2026-Semester-1'" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "completed"] },
+        "totalAmount": { "type": "number" },
+        "amountPaid": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "hostelId", "roomId", "semester", "status", "totalAmount", "amountPaid", "createdAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Represents a financial transaction for a booking.",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string", "description": "ID of the associated booking", "$ref": "#/entities/Booking" },
+        "userId": { "type": "string", "description": "UID of the user making the payment", "$ref": "#/entities/User" },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["mobile_money", "card", "bank_transfer"] },
+        "reference": { "type": "string", "description": "Transaction reference from the payment gateway (e.g., Paystack)" },
+        "status": { "type": "string", "enum": ["pending", "success", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookingId", "userId", "amount", "method", "reference", "status", "createdAt"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Represents an issue raised by a student regarding their hostel.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the student", "$ref": "#/entities/User" },
+        "hostelId": { "type": "string", "description": "ID of the hostel", "$ref": "#/entities/Hostel" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in-progress", "resolved"] },
+        "managerResponse": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "hostelId", "title", "description", "status", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Represents a rating and feedback left by a student for a hostel.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the student", "$ref": "#/entities/User" },
+        "hostelId": { "type": "string", "description": "ID of the hostel", "$ref": "#/entities/Hostel" },
+        "rating": { "type": "number", "description": "Rating from 1 to 5" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "hostelId", "rating", "createdAt"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Represents a message sent by a guest or parent to a hostel manager.",
+      "type": "object",
+      "properties": {
+        "hostelId": { "type": "string", "description": "ID of the hostel", "$ref": "#/entities/Hostel" },
+        "managerId": { "type": "string", "description": "UID of the manager", "$ref": "#/entities/User" },
+        "senderName": { "type": "string" },
+        "senderEmail": { "type": "string", "format": "email" },
+        "senderPhone": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["unread", "read", "replied"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["hostelId", "managerId", "senderName", "senderEmail", "message", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/hostels/{hostelId}": {
+      "schema": { "$ref": "#/entities/Hostel" },
+      "description": "Stores hostel properties."
+    },
+    "/hostels/{hostelId}/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/Room" },
+      "description": "Stores rooms as a subcollection under their respective hostel."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Stores all room reservations."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Stores payment transaction records."
+    },
+    "/complaints/{complaintId}": {
+      "schema": { "$ref": "#/entities/Complaint" },
+      "description": "Stores student complaints."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Stores hostel reviews."
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/Inquiry" },
+      "description": "Stores guest inquiries to managers."
+    }
+  }
+}

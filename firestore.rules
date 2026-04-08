@@ -1,0 +1,174 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - role: string (required, enum: 'student', 'manager', 'guest', 'admin')
+    //   - displayName: string (optional)
+    //   - phoneNumber: string (optional)
+    //   - createdAt: timestamp (required, immutable)
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "admin@gmail.com" && request.auth.token.email_verified == true)); // Default admin
+    }
+    function hasOnlyAllowedFields(allowedFields) { return request.resource.data.keys().hasOnly(allowedFields); }
+    function isValidEmail(email) { return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"); }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.email is string &&
+             data.role in ['student', 'manager', 'guest', 'admin'] &&
+             ( !('displayName' in data) || data.displayName is string ) &&
+             ( !('phoneNumber' in data) || data.phoneNumber is string ) &&
+             ( !('phoneVerified' in data) || data.phoneVerified is bool ) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidManagerVerification(data) {
+      return data.userId is string &&
+             data.idDocumentUrl is string &&
+             data.propertyProofUrl is string &&
+             data.status in ['pending', 'verified', 'rejected'] &&
+             data.submittedAt is timestamp &&
+             ( !('adminNotes' in data) || data.adminNotes is string ) &&
+             ( !('updatedAt' in data) || data.updatedAt is timestamp );
+    }
+
+    function isValidHostel(data) {
+      return data.managerId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.location is string && data.location.size() > 0 && data.location.size() < 100 &&
+             data.address is string && data.address.size() > 0 && data.address.size() < 200 &&
+             data.distanceFromCampus is number && data.distanceFromCampus >= 0 &&
+             data.amenities is list && data.amenities.size() <= 20 &&
+             data.images is list && data.images.size() <= 10 &&
+             data.rating is number && data.rating >= 0 && data.rating <= 5 &&
+             data.isVerified is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidRoom(data) {
+      return data.hostelId is string &&
+             data.roomNumber is string && data.roomNumber.size() > 0 && data.roomNumber.size() < 20 &&
+             data.type in ['1-in-a-room', '2-in-a-room', '3-in-a-room', '4-in-a-room'] &&
+             data.pricePerSemester is number && data.pricePerSemester >= 0 &&
+             data.capacity is number && data.capacity > 0 && data.capacity <= 4 &&
+             data.occupiedBeds is number && data.occupiedBeds >= 0 && data.occupiedBeds <= data.capacity &&
+             data.isAvailable is bool;
+    }
+
+    function isValidBooking(data) {
+      return data.hostelId is string &&
+             data.roomId is string &&
+             data.studentId is string &&
+             data.status in ['pending', 'confirmed', 'cancelled'] &&
+             data.amount is number && data.amount >= 0 &&
+             data.paymentStatus in ['pending', 'paid'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidReview(data) {
+      return data.hostelId is string &&
+             data.userId is string &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 100 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() < 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidComplaint(data) {
+      return data.userId is string &&
+             data.hostelId is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 1000 &&
+             data.status in ['open', 'in-progress', 'resolved'] &&
+             ( !('managerResponse' in data) || data.managerResponse is string ) &&
+             data.createdAt is timestamp &&
+             ( !('resolvedAt' in data) || data.resolvedAt is timestamp );
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) &&
+                       isValidUser(request.resource.data) &&
+                       request.resource.data.uid == userId &&
+                       request.resource.data.role in ['student', 'manager', 'guest']; // Cannot create admin directly
+      allow update: if (isOwner(userId) &&
+                       isValidUser(request.resource.data) &&
+                       request.resource.data.uid == resource.data.uid &&
+                       request.resource.data.role == resource.data.role && // Role is immutable by user
+                       request.resource.data.createdAt == resource.data.createdAt) || isAdmin(); // createdAt is immutable
+    }
+
+    match /managerVerifications/{verificationId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId) &&
+                       isValidManagerVerification(request.resource.data) &&
+                       request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isOwner(resource.data.studentId) || isOwner(get(/databases/$(database)/documents/hostels/$(resource.data.hostelId)).data.managerId) || isAdmin();
+      allow create: if isOwner(request.resource.data.studentId) && isValidBooking(request.resource.data);
+      allow update: if isOwner(resource.data.studentId) || isOwner(get(/databases/$(database)/documents/hostels/$(resource.data.hostelId)).data.managerId) || isAdmin();
+    }
+
+    match /complaints/{complaintId} {
+      allow read: if isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/hostels/$(resource.data.hostelId)).data.managerId) || isAdmin();
+      allow create: if isOwner(request.resource.data.userId) && isValidComplaint(request.resource.data);
+      allow update: if isOwner(get(/databases/$(database)/documents/hostels/$(resource.data.hostelId)).data.managerId) || isAdmin();
+    }
+
+    match /hostels/{hostelId} {
+      allow read: if resource.data.isVerified == true || isOwner(resource.data.managerId) || isAdmin();
+      allow create: if isOwner(request.resource.data.managerId) && isValidHostel(request.resource.data);
+      allow update: if isOwner(resource.data.managerId) || isAdmin() ||
+                    (
+                      isAuthenticated() &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating']) &&
+                      request.resource.data.rating >= 0 && request.resource.data.rating <= 5
+                    );
+      allow delete: if isAdmin();
+      
+      match /rooms/{roomId} {
+        allow read: if true;
+        allow create: if isOwner(get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId) || isAdmin();
+        allow update: if isOwner(get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId) || isAdmin() ||
+                      (
+                        isAuthenticated() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['occupiedBeds', 'isAvailable']) &&
+                        request.resource.data.occupiedBeds == resource.data.occupiedBeds + 1 &&
+                        request.resource.data.isAvailable == (request.resource.data.occupiedBeds < resource.data.capacity)
+                      );
+        allow delete: if isOwner(get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId) || isAdmin();
+      }
+
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isOwner(request.resource.data.userId) && isValidReview(request.resource.data);
+        allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+      }
+
+      match /inquiries/{inquiryId} {
+        allow read: if isOwner(resource.data.managerId) || isAdmin();
+        allow create: if true; // Anyone can send an inquiry
+        allow update: if isOwner(resource.data.managerId) || isAdmin();
+        allow delete: if isOwner(resource.data.managerId) || isAdmin();
+      }
+    }
+  }
+}
