@@ -241,6 +241,20 @@ export default function AdminDashboard() {
                   </div>
                 </Link>
 
+                <Link href="/admin/hostels" className="group">
+                  <div className="p-8 border border-slate-900 group-hover:bg-slate-900 transition-all duration-300">
+                    <h3 className="text-lg font-heading font-bold text-slate-900 group-hover:text-white uppercase tracking-tight mb-2">
+                      Hostel Verifications
+                    </h3>
+                    <p className="text-sm text-slate-500 group-hover:text-slate-400 mb-8">
+                      Review and authorize individual hostel listings for platform visibility.
+                    </p>
+                    <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-900 group-hover:text-white">
+                      Access Module <TrendingUp className="ml-2 w-3 h-3" />
+                    </div>
+                  </div>
+                </Link>
+
                 {/* Placeholder for future modules */}
                 <div className="p-8 border border-slate-100 bg-slate-50 flex items-center justify-center text-center">
                   <div>

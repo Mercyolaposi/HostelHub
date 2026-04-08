@@ -191,6 +191,27 @@ export const addReview = async (hostelId: string, reviewData: Omit<Review, 'id' 
   }
 };
 
+export const getAllHostels = async () => {
+  try {
+    const q = query(collection(db, 'hostels'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hostel));
+  } catch (error: any) {
+    console.error('Error getting all hostels:', error);
+    throw new Error(error.message || 'Failed to get hostels');
+  }
+};
+
+export const updateHostelVerificationStatus = async (hostelId: string, isVerified: boolean) => {
+  try {
+    const docRef = doc(db, 'hostels', hostelId);
+    await updateDoc(docRef, { isVerified });
+  } catch (error: any) {
+    console.error('Error updating hostel verification:', error);
+    throw new Error(error.message || 'Failed to update hostel verification');
+  }
+};
+
 export const getHostelReviews = async (hostelId: string) => {
   try {
     const q = query(collection(db, `hostels/${hostelId}/reviews`), orderBy('createdAt', 'desc'));
