@@ -255,13 +255,33 @@ export default function AdminDashboard() {
                   </div>
                 </Link>
 
-                {/* Placeholder for future modules */}
-                <div className="p-8 border border-slate-100 bg-slate-50 flex items-center justify-center text-center">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 italic">Module Locked</p>
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-300">Advanced Analytics Coming Soon</p>
+                <Link href="/admin/complaints" className="group">
+                  <div className="p-8 border border-slate-900 group-hover:bg-slate-900 transition-all duration-300 h-full">
+                    <h3 className="text-lg font-heading font-bold text-slate-900 group-hover:text-white uppercase tracking-tight mb-2">
+                      System Complaints
+                    </h3>
+                    <p className="text-sm text-slate-500 group-hover:text-slate-400 mb-8">
+                      Monitor, override, and manage all complaints across the platform.
+                    </p>
+                    <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-900 group-hover:text-white">
+                      Access Module <TrendingUp className="ml-2 w-3 h-3" />
+                    </div>
                   </div>
-                </div>
+                </Link>
+
+                <Link href="/admin/analytics" className="group">
+                  <div className="p-8 border border-slate-900 group-hover:bg-slate-900 transition-all duration-300 h-full">
+                    <h3 className="text-lg font-heading font-bold text-slate-900 group-hover:text-white uppercase tracking-tight mb-2">
+                      Revenue Analytics
+                    </h3>
+                    <p className="text-sm text-slate-500 group-hover:text-slate-400 mb-8">
+                      View global financial overview, manager performance, and booking trends.
+                    </p>
+                    <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-900 group-hover:text-white">
+                      Access Module <TrendingUp className="ml-2 w-3 h-3" />
+                    </div>
+                  </div>
+                </Link>
 
                 <div className="p-8 border border-slate-100 bg-slate-50 flex items-center justify-center text-center">
                   <div>

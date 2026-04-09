@@ -64,11 +64,15 @@ export interface Complaint {
   id?: string;
   userId: string;
   hostelId: string;
+  managerId: string;
   title: string;
-  description: string;
-  status: 'open' | 'in-progress' | 'resolved';
+  message: string;
+  image?: string;
+  status: 'pending' | 'in-progress' | 'resolved';
   managerResponse?: string;
+  adminVisible: boolean;
   createdAt: any;
+  updatedAt: any;
   resolvedAt?: any;
 }
 

@@ -153,6 +153,37 @@ export default function ManagerDashboard() {
               </div>
             </div>
 
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Link href="/manager/analytics" className="group">
+                <div className="p-8 border border-slate-900 group-hover:bg-slate-900 transition-all duration-300 h-full">
+                  <h3 className="text-lg font-heading font-bold text-slate-900 group-hover:text-white uppercase tracking-tight mb-2">
+                    Financial Analytics
+                  </h3>
+                  <p className="text-sm text-slate-500 group-hover:text-slate-400 mb-8">
+                    Track your property revenue, occupancy rates, and booking trends.
+                  </p>
+                  <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-900 group-hover:text-white">
+                    Access Module <TrendingUp className="ml-2 w-3 h-3" />
+                  </div>
+                </div>
+              </Link>
+              
+              <Link href="/manager/hostels/new" className="group">
+                <div className="p-8 border border-slate-900 group-hover:bg-slate-900 transition-all duration-300 h-full">
+                  <h3 className="text-lg font-heading font-bold text-slate-900 group-hover:text-white uppercase tracking-tight mb-2">
+                    Add Property
+                  </h3>
+                  <p className="text-sm text-slate-500 group-hover:text-slate-400 mb-8">
+                    List a new hostel or property on the platform.
+                  </p>
+                  <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-900 group-hover:text-white">
+                    Access Module <TrendingUp className="ml-2 w-3 h-3" />
+                  </div>
+                </div>
+              </Link>
+            </div>
+
             <div className="grid lg:grid-cols-12 gap-12 lg:gap-24">
               <div className="lg:col-span-8 space-y-12 md:space-y-16">
                 {/* Properties Section */}
@@ -304,7 +335,7 @@ export default function ManagerDashboard() {
                                 {complaint.status}
                               </span>
                             </div>
-                            <p className="text-slate-600 text-xs md:text-sm leading-relaxed line-clamp-2">{complaint.description}</p>
+                            <p className="text-slate-600 text-xs md:text-sm leading-relaxed line-clamp-2">{complaint.message}</p>
                           </div>
                         );
                       })}

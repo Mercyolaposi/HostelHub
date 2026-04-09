@@ -1,13 +1,15 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Complaint } from '@/types';
 
-export const submitComplaint = async (complaint: Omit<Complaint, 'id' | 'createdAt' | 'status'>) => {
+export const submitComplaint = async (complaint: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'adminVisible'>) => {
   try {
     const docRef = await addDoc(collection(db, 'complaints'), {
       ...complaint,
-      status: 'open',
+      status: 'pending',
+      adminVisible: true,
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
     return docRef.id;
   } catch (error: any) {
@@ -58,50 +60,60 @@ export const getHostelComplaints = async (hostelId: string) => {
   }
 };
 
-export const getManagerComplaints = async (hostelIds: string[]) => {
-  if (!hostelIds || hostelIds.length === 0) return [];
+export const getManagerComplaints = async (managerId: string) => {
+  if (!managerId) return [];
   
   try {
-    const chunks = [];
-    for (let i = 0; i < hostelIds.length; i += 30) {
-      chunks.push(hostelIds.slice(i, i + 30));
-    }
-
-    const allComplaints: Complaint[] = [];
+    const q = query(
+      collection(db, 'complaints'),
+      where('managerId', '==', managerId)
+    );
+    const querySnapshot = await getDocs(q);
+    const complaints = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Complaint));
     
-    for (const chunk of chunks) {
-      const q = query(
-        collection(db, 'complaints'),
-        where('hostelId', 'in', chunk)
-      );
-      const querySnapshot = await getDocs(q);
-      const complaints = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Complaint));
-      allComplaints.push(...complaints);
-    }
-    
-    allComplaints.sort((a, b) => {
+    complaints.sort((a, b) => {
       const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
       const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
       return dateB - dateA;
     });
 
-    return allComplaints;
+    return complaints;
   } catch (error: any) {
     console.error('Error getting manager complaints:', error);
     throw new Error(error.message || 'Failed to get manager complaints');
   }
 };
 
+export const getAllComplaints = async () => {
+  try {
+    const q = query(collection(db, 'complaints'));
+    const querySnapshot = await getDocs(q);
+    const complaints = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Complaint));
+    
+    return complaints.sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+      return dateB - dateA;
+    });
+  } catch (error: any) {
+    console.error('Error getting all complaints:', error);
+    throw new Error(error.message || 'Failed to get all complaints');
+  }
+};
+
 export const updateComplaintStatus = async (
   complaintId: string, 
-  status: 'open' | 'in-progress' | 'resolved', 
+  status: 'pending' | 'in-progress' | 'resolved', 
   managerResponse?: string
 ) => {
   try {
     const complaintRef = doc(db, 'complaints', complaintId);
-    const updateData: any = { status };
+    const updateData: any = { 
+      status,
+      updatedAt: serverTimestamp()
+    };
     
-    if (managerResponse) {
+    if (managerResponse !== undefined) {
       updateData.managerResponse = managerResponse;
     }
     
@@ -113,5 +125,14 @@ export const updateComplaintStatus = async (
   } catch (error: any) {
     console.error('Error updating complaint:', error);
     throw new Error(error.message || 'Failed to update complaint');
+  }
+};
+
+export const deleteComplaint = async (complaintId: string) => {
+  try {
+    await deleteDoc(doc(db, 'complaints', complaintId));
+  } catch (error: any) {
+    console.error('Error deleting complaint:', error);
+    throw new Error(error.message || 'Failed to delete complaint');
   }
 };

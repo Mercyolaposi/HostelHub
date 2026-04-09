@@ -12,7 +12,7 @@ import { z } from 'zod';
 const complaintSchema = z.object({
   hostelId: z.string().min(1, 'Please select a hostel'),
   title: z.string().min(5, 'Title must be at least 5 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
 });
 
 export default function StudentComplaints() {
@@ -25,7 +25,7 @@ export default function StudentComplaints() {
   const [formData, setFormData] = useState({
     hostelId: '',
     title: '',
-    description: ''
+    message: ''
   });
 
   const hostels = useMemo(() => {
@@ -33,7 +33,7 @@ export default function StudentComplaints() {
     const uniqueHostels = new Map();
     bookings.forEach(b => {
       if (b.hostel && !uniqueHostels.has(b.hostelId)) {
-        uniqueHostels.set(b.hostelId, { id: b.hostelId, name: b.hostel.name });
+        uniqueHostels.set(b.hostelId, { id: b.hostelId, name: b.hostel.name, managerId: b.hostel.managerId });
       }
     });
     return Array.from(uniqueHostels.values());
@@ -47,17 +47,21 @@ export default function StudentComplaints() {
 
     try {
       const validatedData = complaintSchema.parse(formData);
+      
+      const selectedHostel = hostels.find(h => h.id === validatedData.hostelId);
+      if (!selectedHostel) throw new Error("Hostel not found");
 
       setIsSubmitting(true);
       await submitComplaint({
         userId: user.uid,
         hostelId: validatedData.hostelId,
+        managerId: selectedHostel.managerId,
         title: validatedData.title,
-        description: validatedData.description
+        message: validatedData.message
       });
 
       toast.success('Complaint submitted successfully');
-      setFormData({ hostelId: '', title: '', description: '' });
+      setFormData({ hostelId: '', title: '', message: '' });
       
       // Refresh complaints using SWR mutate
       mutateComplaints();
@@ -135,14 +139,14 @@ export default function StudentComplaints() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Description</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Message</label>
                   <textarea 
                     placeholder="Describe the issue in detail..." 
                     className="w-full bg-transparent border-b border-slate-900 py-3 text-sm focus:outline-none focus:border-b-2 transition-all min-h-[120px] resize-y placeholder:text-slate-300 rounded-none"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   />
-                  {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
+                  {errors.message && <p className="text-xs text-red-500 mt-1">{errors.message}</p>}
                 </div>
                 
                 <button 
@@ -183,9 +187,9 @@ export default function StudentComplaints() {
                         </p>
                       </div>
                       <div>
-                        {complaint.status === 'open' && (
+                        {complaint.status === 'pending' && (
                           <span className="inline-flex items-center px-3 py-1 border border-amber-500 text-amber-600 text-xs font-bold uppercase tracking-widest bg-amber-50">
-                            <AlertCircle className="w-3 h-3 mr-2" /> Open
+                            <AlertCircle className="w-3 h-3 mr-2" /> Pending
                           </span>
                         )}
                         {complaint.status === 'in-progress' && (
@@ -202,7 +206,7 @@ export default function StudentComplaints() {
                     </div>
                     
                     <div className="prose prose-sm max-w-none text-slate-600 mb-6 border-l-2 border-slate-200 pl-4">
-                      <p className="whitespace-pre-wrap">{complaint.description}</p>
+                      <p className="whitespace-pre-wrap">{complaint.message}</p>
                     </div>
 
                     {complaint.managerResponse && (

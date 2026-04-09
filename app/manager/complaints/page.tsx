@@ -17,7 +17,7 @@ export default function ManagerComplaints() {
   
   const [selectedHostelId, setSelectedHostelId] = useState<string>('all');
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
-  const [responseStatus, setResponseStatus] = useState<'open' | 'in-progress' | 'resolved'>('in-progress');
+  const [responseStatus, setResponseStatus] = useState<'pending' | 'in-progress' | 'resolved'>('in-progress');
   const [responseText, setResponseText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -153,9 +153,9 @@ export default function ManagerComplaints() {
                       </p>
                     </div>
                     <div className="shrink-0">
-                      {complaint.status === 'open' && (
+                      {complaint.status === 'pending' && (
                         <span className="inline-flex items-center px-2 py-0.5 md:px-3 md:py-1 border border-amber-500 text-amber-600 text-[8px] md:text-[10px] font-bold uppercase tracking-widest bg-amber-50">
-                          <AlertCircle className="w-3 h-3 mr-1.5 md:mr-2" /> Open
+                          <AlertCircle className="w-3 h-3 mr-1.5 md:mr-2" /> Pending
                         </span>
                       )}
                       {complaint.status === 'in-progress' && (
@@ -172,9 +172,9 @@ export default function ManagerComplaints() {
                   </div>
                   
                   <div className="mb-6 md:mb-8">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 md:mb-3">Description</h4>
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 md:mb-3">Message</h4>
                     <div className="prose prose-sm max-w-none text-slate-600 border-l-2 border-slate-200 pl-4 text-xs md:text-sm">
-                      <p className="whitespace-pre-wrap leading-relaxed">{complaint.description}</p>
+                      <p className="whitespace-pre-wrap leading-relaxed">{complaint.message}</p>
                     </div>
                   </div>
                   
@@ -196,7 +196,7 @@ export default function ManagerComplaints() {
                           value={responseStatus} 
                           onChange={(e: any) => setResponseStatus(e.target.value)}
                         >
-                          <option value="open">Open</option>
+                          <option value="pending">Pending</option>
                           <option value="in-progress">In Progress</option>
                           <option value="resolved">Resolved</option>
                         </select>

@@ -245,7 +245,7 @@ export default function StudentDashboard() {
                             {complaint.status}
                           </div>
                         </div>
-                        <p className="text-slate-600 text-xs md:text-sm mb-6 md:mb-8 line-clamp-3 leading-relaxed">{complaint.description}</p>
+                        <p className="text-slate-600 text-xs md:text-sm mb-6 md:mb-8 line-clamp-3 leading-relaxed">{complaint.message}</p>
                         <div className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
                           Filed on: {complaint.createdAt?.toDate ? complaint.createdAt.toDate().toLocaleDateString() : 'N/A'}
                         </div>

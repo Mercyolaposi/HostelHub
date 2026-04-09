@@ -56,8 +56,8 @@ export function useManagerDashboard(managerId: string | undefined) {
   );
 
   const { data: complaints, error: complaintsError, isLoading: complaintsLoading, mutate: mutateComplaints } = useSWR(
-    hostelIds.length > 0 ? `manager-complaints-${managerId}` : null,
-    () => getManagerComplaints(hostelIds),
+    managerId ? `manager-complaints-${managerId}` : null,
+    () => getManagerComplaints(managerId!),
     { revalidateOnFocus: false }
   );
 
