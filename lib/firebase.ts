@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import firebaseConfig from '../firebase-applet-config.json';
+import firebaseConfig from '../firebase-config.json';
 
 // Initialize Firebase SDK
 // We use getApps().length to prevent re-initializing the app during hot reloads in Next.js
