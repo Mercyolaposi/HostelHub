@@ -58,7 +58,7 @@ HostelHub is a high-performance, full-stack web application designed to streamli
 - A Firebase Project
 
 ### 2. Firebase Configuration
-This project uses a `firebase-applet-config.json` file in the root directory to manage Firebase credentials. Ensure this file exists and contains your project's configuration:
+This project uses a `firebase-config.json` file in the root directory to manage Firebase credentials. Ensure this file exists and contains your project's configuration:
 
 ```json
 {
