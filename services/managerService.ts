@@ -1,8 +1,8 @@
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createNotification } from './notificationService';
 import { sendManagerVerificationEmail } from './emailService';
+import { uploadToCloudinary } from './cloudinaryService';
 
 export interface ManagerVerification {
   id?: string;
@@ -27,14 +27,10 @@ export const submitVerification = async (
 ) => {
   try {
     // 1. Upload ID Document
-    const idDocRef = ref(storage, `manager_documents/${userId}/id_${Date.now()}_${idDocumentFile.name}`);
-    await uploadBytes(idDocRef, idDocumentFile);
-    const idDocumentUrl = await getDownloadURL(idDocRef);
+    const idDocumentUrl = await uploadToCloudinary(idDocumentFile, `manager_documents/${userId}`);
 
     // 2. Upload Property Proof
-    const propProofRef = ref(storage, `manager_documents/${userId}/prop_${Date.now()}_${propertyProofFile.name}`);
-    await uploadBytes(propProofRef, propertyProofFile);
-    const propertyProofUrl = await getDownloadURL(propProofRef);
+    const propertyProofUrl = await uploadToCloudinary(propertyProofFile, `manager_documents/${userId}`);
 
     // 3. Create Verification Document
     const verificationData = {

@@ -1,16 +1,14 @@
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, orderBy, collectionGroup } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Hostel, Room, Review } from '@/types';
+import { uploadToCloudinary } from './cloudinaryService';
 
 export const createHostel = async (managerId: string, hostelData: Partial<Hostel>, imageFiles: File[]) => {
   try {
     // 1. Upload images
     const imageUrls: string[] = [];
     for (const file of imageFiles) {
-      const imageRef = ref(storage, `hostel_images/${managerId}/${Date.now()}_${file.name}`);
-      await uploadBytes(imageRef, file);
-      const url = await getDownloadURL(imageRef);
+      const url = await uploadToCloudinary(file, `hostel_images/${managerId}`);
       imageUrls.push(url);
     }
 

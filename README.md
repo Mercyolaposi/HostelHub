@@ -27,7 +27,8 @@ HostelHub is a high-performance, full-stack web application designed to streamli
 - **Frontend**: [Next.js 15](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [Tailwind CSS v4](https://tailwindcss.com/)
 - **State & Auth**: [Firebase Authentication](https://firebase.google.com/docs/auth)
 - **Database**: [Cloud Firestore](https://firebase.google.com/docs/firestore) (NoSQL)
-- **Storage**: [Firebase Storage](https://firebase.google.com/docs/storage) (for document and image uploads)
+- **Storage & Media**: [Cloudinary](https://cloudinary.com/) (for optimized image and document uploads)
+- **Email**: [Resend](https://resend.com/) (for transactional emails and notifications)
 - **Animations**: [Motion](https://motion.dev/) (formerly Framer Motion)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Notifications**: [Sonner](https://sonner.emilkowal.ski/)
@@ -72,7 +73,20 @@ This project uses a `firebase-config.json` file in the root directory to manage 
 }
 ```
 
-### 3. Install Dependencies
+### 3. Environment Variables
+Create a `.env` or `.env.local` file in the root directory and add the following keys for Cloudinary and Resend integrations:
+
+```env
+# Cloudinary (Image/Document Uploads)
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your_cloud_name"
+NEXT_PUBLIC_CLOUDINARY_API_KEY="your_api_key"
+CLOUDINARY_API_SECRET="your_api_secret"
+
+# Resend (Email Notifications)
+RESEND_API_KEY="your_resend_api_key"
+```
+
+### 4. Install Dependencies
 Due to certain third-party libraries (like `react-paystack`) not yet officially supporting React 19 peer dependencies, you **must** use the `--legacy-peer-deps` flag during installation:
 
 ```bash
@@ -81,7 +95,7 @@ npm install --legacy-peer-deps
 
 If you encounter issues with form validation libraries, ensure all core dependencies are present:
 
-### 4. Run Development Server
+### 5. Run Development Server
 ```bash
 npm run dev
 ```
@@ -95,10 +109,9 @@ The system implements strict server-side validation via `firestore.rules`:
 - **Admin Privileges**: Only authorized admin accounts (e.g., `admin@gmail.com`) can verify managers or view platform-wide stats.
 - **Data Integrity**: All writes are validated for type safety, required fields, and logical consistency.
 
-### Firebase Storage Rules
-- Only authenticated users can upload documents.
-- Managers can only access their own verification documents.
-- Public images (hostel photos) are readable by all users.
+### Media Security (Cloudinary)
+- **Secure Uploads**: All media uploads are secured via server-side cryptographic signature generation (`/api/upload`).
+- **Optimized Delivery**: Images are automatically compressed and delivered via Cloudinary's global CDN to ensure fast load times and minimal data usage.
 
 ## 💳 Payment Integration
 The system is designed to support **Mobile Money (MoMo)** payments via providers like Paystack or Hubtel. Ensure you configure the appropriate API keys in your environment settings to enable live transactions.

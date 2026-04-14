@@ -1,0 +1,61 @@
+export const uploadToCloudinary = async (file: File, folder: string): Promise<string> => {
+  try {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+
+    if (!cloudName || !apiKey) {
+      // Fallback for development if Cloudinary is not configured
+      console.warn('Cloudinary is not configured. Returning a placeholder URL.');
+      return `https://picsum.photos/seed/${file.name}/800/600`;
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000);
+
+    const paramsToSign = {
+      timestamp,
+      folder,
+    };
+
+    // Get signature from our API route
+    const signatureResponse = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ paramsToSign }),
+    });
+
+    if (!signatureResponse.ok) {
+      throw new Error('Failed to get upload signature');
+    }
+
+    const { signature } = await signatureResponse.json();
+
+    // Upload directly to Cloudinary
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp.toString());
+    formData.append('signature', signature);
+    formData.append('folder', folder);
+
+    const uploadResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json();
+      throw new Error(errorData.error?.message || 'Failed to upload to Cloudinary');
+    }
+
+    const data = await uploadResponse.json();
+    return data.secure_url;
+  } catch (error: any) {
+    console.error('Cloudinary upload error:', error);
+    throw new Error(error.message || 'Failed to upload image');
+  }
+};
