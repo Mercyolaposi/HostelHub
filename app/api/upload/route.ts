@@ -10,7 +10,7 @@ cloudinary.config({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { paramsToSign } = body;
+    const { folder } = body;
 
     if (!process.env.CLOUDINARY_API_SECRET) {
       return NextResponse.json(
@@ -19,12 +19,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Generate the timestamp on the secure backend server. 
+    // This prevents "Stale request" errors if the client laptop's clock is inaccurate.
+    const timestamp = Math.round(new Date().getTime() / 1000);
+
+    const paramsToSign = {
+      timestamp,
+      folder,
+    };
+
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
       process.env.CLOUDINARY_API_SECRET
     );
 
-    return NextResponse.json({ signature });
+    return NextResponse.json({ signature, timestamp });
   } catch (error: any) {
     console.error('Error generating Cloudinary signature:', error);
     return NextResponse.json(

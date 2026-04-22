@@ -9,27 +9,22 @@ export const uploadToCloudinary = async (file: File, folder: string): Promise<st
       return `https://picsum.photos/seed/${file.name}/800/600`;
     }
 
-    const timestamp = Math.round(new Date().getTime() / 1000);
-
-    const paramsToSign = {
-      timestamp,
-      folder,
-    };
-
-    // Get signature from our API route
+    // Request both signature AND secure timestamp from our backend
+    // relying on the client device clock causes "Stale request" errors 
+    // if the user's laptop time is out of sync.
     const signatureResponse = await fetch('/api/upload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ paramsToSign }),
+      body: JSON.stringify({ folder }),
     });
 
     if (!signatureResponse.ok) {
       throw new Error('Failed to get upload signature');
     }
 
-    const { signature } = await signatureResponse.json();
+    const { signature, timestamp } = await signatureResponse.json();
 
     // Upload directly to Cloudinary
     const formData = new FormData();
