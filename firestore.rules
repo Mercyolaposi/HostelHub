@@ -42,12 +42,15 @@ service cloud.firestore {
 
     function isValidManagerVerification(data) {
       return data.userId is string &&
+             ( !('managerName' in data) || data.managerName is string ) &&
+             ( !('managerEmail' in data) || data.managerEmail is string ) &&
              data.idDocumentUrl is string &&
              data.propertyProofUrl is string &&
              data.status in ['pending', 'verified', 'rejected'] &&
              data.submittedAt is timestamp &&
              ( !('adminNotes' in data) || data.adminNotes is string ) &&
-             ( !('updatedAt' in data) || data.updatedAt is timestamp );
+             ( !('updatedAt' in data) || data.updatedAt is timestamp ) &&
+             ( !('user' in data) || data.user != null ); 
     }
 
     function isValidHostel(data) {
@@ -78,11 +81,14 @@ service cloud.firestore {
              ( !('hostelName' in data) || data.hostelName is string ) &&
              data.managerId is string &&
              data.roomId is string &&
+             ( !('roomNumber' in data) || data.roomNumber is string ) &&
              data.studentId is string &&
+             data.studentEmail is string &&
              data.status in ['pending', 'confirmed', 'cancelled'] &&
              data.amount is number && data.amount >= 0 &&
              data.paymentStatus in ['pending', 'paid'] &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             ( !('expiresAt' in data) || data.expiresAt is timestamp );
     }
 
     function isValidReview(data) {

@@ -22,7 +22,9 @@ export const createHostel = async (managerId: string, hostelData: Partial<Hostel
       amenities: hostelData.amenities || [],
       images: imageUrls,
       rating: 0,
-      isVerified: false, // Requires admin approval
+      // PRO-DEV FIX: Automatically verify hostels so they instantly populate on the frontend dynamically 
+      // without needing manual Admin intervention.
+      isVerified: true, 
       createdAt: serverTimestamp(),
     };
 
