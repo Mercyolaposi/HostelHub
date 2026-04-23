@@ -18,6 +18,7 @@ export const uploadToCloudinary = async (file: File, folder: string): Promise<st
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ folder }),
+      cache: 'no-store'
     });
 
     if (!signatureResponse.ok) {

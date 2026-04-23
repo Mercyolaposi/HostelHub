@@ -115,11 +115,16 @@ service cloud.firestore {
                        isValidUser(request.resource.data) &&
                        request.resource.data.uid == userId &&
                        request.resource.data.role in ['student', 'manager', 'guest']; // Cannot create admin directly
+                       
+      // PRO-DEV OPTIMIZATION: Only explicitly allowlist fields that a user can change. 
+      // This immediately fixes "insufficient permissions" caused by deep object equality checks on Timestamps, 
+      // while structurally preventing privilege escalation (e.g. they cannot change their 'role').
       allow update: if (isOwner(userId) &&
-                       isValidUser(request.resource.data) &&
-                       request.resource.data.uid == resource.data.uid &&
-                       request.resource.data.role == resource.data.role && // Role is immutable by user
-                       request.resource.data.createdAt == resource.data.createdAt) || isAdmin(); // createdAt is immutable
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phoneNumber', 'phoneVerified', 'displayName', 'updatedAt']) &&
+                       ( !('phoneNumber' in request.resource.data) || request.resource.data.phoneNumber is string ) &&
+                       ( !('phoneVerified' in request.resource.data) || request.resource.data.phoneVerified is bool ) &&
+                       ( !('displayName' in request.resource.data) || request.resource.data.displayName is string )) 
+                       || isAdmin();
     }
 
     match /managerVerifications/{verificationId} {
