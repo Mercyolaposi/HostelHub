@@ -1,17 +1,19 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { Review } from '@/types';
+import { handleFirestoreError } from '@/lib/firebase-errors';
 
 export const submitReview = async (review: Omit<Review, 'id' | 'createdAt'>) => {
+  const path = `hostels/${review.hostelId}/reviews`;
   try {
     // Add the review document
-    const reviewRef = await addDoc(collection(db, `hostels/${review.hostelId}/reviews`), {
+    const reviewRef = await addDoc(collection(db, path), {
       ...review,
       createdAt: serverTimestamp(),
     });
 
     // Update the hostel's average rating
-    const reviewsSnapshot = await getDocs(collection(db, `hostels/${review.hostelId}/reviews`));
+    const reviewsSnapshot = await getDocs(collection(db, path));
     let totalRating = 0;
     let count = 0;
     
@@ -32,8 +34,8 @@ export const submitReview = async (review: Omit<Review, 'id' | 'createdAt'>) => 
 
     return reviewRef.id;
   } catch (error: any) {
-    console.error('Error submitting review:', error);
-    throw new Error(error.message || 'Failed to submit review');
+    if (error instanceof Error && error.message.includes('{')) throw error;
+    handleFirestoreError(error, 'write', path);
   }
 };
 

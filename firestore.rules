@@ -24,11 +24,11 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        // Database check
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-        // Bootstrap check (Fallback for new projects/accounts)
-        (request.auth.token.email == "feraclem@gmail.com" && request.auth.token.email_verified == true)
+        // Database check in users collection
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+        // Database check in specific admins collection (for root portability)
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
 
@@ -69,7 +69,15 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().role != 'admin';
       allow update: if (isOwner(userId) && 
                        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'phoneNumber', 'updatedAt']) &&
-                       (incoming().updatedAt == request.time)) || isAdmin();
+                       incoming().uid == existing().uid &&
+                       incoming().email == existing().email &&
+                       incoming().role == existing().role &&
+                       incoming().updatedAt == request.time) || isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only manageable via Firebase Console or Admin SDK for maximum security
     }
 
     match /hostels/{hostelId} {

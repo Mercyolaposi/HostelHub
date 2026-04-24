@@ -1,7 +1,9 @@
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
+import { handleFirestoreError } from '@/lib/firebase-errors';
 
 export const getAdminStats = async () => {
+  const path = 'users/bookings/hostels';
   try {
     // Get all users
     const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -59,7 +61,6 @@ export const getAdminStats = async () => {
       }
     };
   } catch (error: any) {
-    console.error('Error getting admin stats:', error);
-    throw new Error(error.message || 'Failed to get admin stats');
+    handleFirestoreError(error, 'list', path);
   }
 };

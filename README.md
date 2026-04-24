@@ -20,8 +20,12 @@ If you clone this project and switch to a different Firebase account or project,
     ```bash
     npm run firebase:deploy:rules
     ```
-3.  **Bootstrap Admin**: The system includes a fallback for the admin email `feraclem@gmail.com`. Log in with this email to access admin features on a new project, or update the `isAdmin` check in `firestore.rules`.
-4.  **Diagnostics**: If an operation fails, the system provides a detailed `FirestoreErrorInfo` in the console, specifying exactly why the operation was denied.
+3.  **Bootstrap Admin**: The system uses a dedicated `admins` collection for root portability. To grant yourself admin access on a new project:
+    - Go to the **Firestore Database** in your Firebase Console.
+    - Create a root-level collection named `admins`.
+    - Add a document where the **Document ID** is your Firebase **UID** (found in the Authentication tab).
+    - You don't need any fields in the document; the existence of the ID in this collection grants root admin privileges.
+4.  **Diagnostics**: If an operation fails, the system provides a detailed `[PRO-DEV DIAGNOSTICS]` JSON payload in the console. This payload includes your UID, email verification status, and exactly which rule path was hit.
 
 ### 🏠 For Hostel Managers
 - **Property Management**: List hostels, define room types, and set pricing.

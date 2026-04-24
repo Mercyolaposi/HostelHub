@@ -2,10 +2,12 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { Complaint } from '@/types';
 import { createNotification } from './notificationService';
+import { handleFirestoreError } from '@/lib/firebase-errors';
 
 export const submitComplaint = async (complaint: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'adminVisible'>) => {
+  const path = 'complaints';
   try {
-    const docRef = await addDoc(collection(db, 'complaints'), {
+    const docRef = await addDoc(collection(db, path), {
       ...complaint,
       status: 'pending',
       adminVisible: true,
@@ -26,8 +28,8 @@ export const submitComplaint = async (complaint: Omit<Complaint, 'id' | 'created
 
     return docRef.id;
   } catch (error: any) {
-    console.error('Error submitting complaint:', error);
-    throw new Error(error.message || 'Failed to submit complaint');
+    if (error instanceof Error && error.message.includes('{')) throw error;
+    handleFirestoreError(error, 'write', path);
   }
 };
 

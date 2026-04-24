@@ -1,12 +1,14 @@
 import { auth } from './firebase';
 
+export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
+
 export interface FirestoreErrorInfo {
   error: string;
-  operationType: 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
+  operationType: OperationType;
   path: string | null;
   authInfo: {
     userId: string;
-    email: string;
+    email: string | null;
     emailVerified: boolean;
     isAnonymous: boolean;
     providerInfo: { providerId: string; displayName: string; email: string; }[];
@@ -16,10 +18,11 @@ export interface FirestoreErrorInfo {
 /**
  * Standardizes Firestore error reporting.
  * Throws a JSON string of FirestoreErrorInfo if it's a permission error.
+ * Use this in all catch blocks that interface with Firestore.
  */
 export function handleFirestoreError(
   error: any,
-  operationType: FirestoreErrorInfo['operationType'],
+  operationType: OperationType,
   path: string | null = null
 ): never {
   const user = auth.currentUser;
@@ -30,7 +33,7 @@ export function handleFirestoreError(
     path,
     authInfo: user ? {
       userId: user.uid,
-      email: user.email || '',
+      email: user.email,
       emailVerified: user.emailVerified,
       isAnonymous: user.isAnonymous,
       providerInfo: user.providerData.map(p => ({
@@ -41,10 +44,23 @@ export function handleFirestoreError(
     } : null,
   };
 
-  if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
-    console.error('Firestore Permission Denied:', errorInfo);
-    throw new Error(JSON.stringify(errorInfo));
+  // Check for permission denied errors specifically
+  if (
+    error?.code === 'permission-denied' || 
+    error?.code === 'firestore/permission-denied' ||
+    error?.message?.toLowerCase().includes('permission') ||
+    error?.message?.toLowerCase().includes('insufficient')
+  ) {
+    const jsonError = JSON.stringify(errorInfo);
+    console.error('🔥 [PRO-DEV DIAGNOSTICS] Firestore Permission Denied:', jsonError);
+    
+    // Create a new error with the JSON payload so the UI or AI can parse it
+    const enhancedError = new Error(jsonError);
+    (enhancedError as any).code = 'permission-denied';
+    throw enhancedError;
   }
 
+  // Rethrow if not a permission error, but still logged
+  console.error(`❌ Firestore ${operationType} error at ${path}:`, error);
   throw error;
 }

@@ -3,6 +3,7 @@ import { collection, doc, runTransaction, serverTimestamp, query, where, getDocs
 import { Booking, Room, Hostel } from '@/types';
 import { createNotification } from './notificationService';
 import { sendBookingConfirmationEmail } from './emailService';
+import { handleFirestoreError } from '@/lib/firebase-errors';
 
 export const createBooking = async (
   hostelId: string,
@@ -11,6 +12,7 @@ export const createBooking = async (
   studentEmail: string,
   amount: number
 ) => {
+  const path = 'bookings';
   try {
     const roomRef = doc(db, `hostels/${hostelId}/rooms`, roomId);
     const hostelRef = doc(db, 'hostels', hostelId);
@@ -86,8 +88,8 @@ export const createBooking = async (
 
     return bookingId;
   } catch (error: any) {
-    console.error('Error creating booking:', error);
-    throw new Error(error.message || 'Failed to create booking');
+    if (error instanceof Error && error.message.includes('{')) throw error;
+    handleFirestoreError(error, 'write', path);
   }
 };
 
