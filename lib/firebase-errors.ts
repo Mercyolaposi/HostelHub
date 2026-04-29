@@ -1,7 +1,14 @@
 import { auth } from './firebase';
 import * as Sentry from "@sentry/nextjs";
 
-export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
 
 export interface FirestoreErrorInfo {
   error: string;

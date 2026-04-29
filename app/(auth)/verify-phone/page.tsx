@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, linkWithCredential, PhoneAuthProvider } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { handleFirestoreError, OperationType } from '@/services/authService';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 import { ArrowRight, Phone } from 'lucide-react';
 
 export default function VerifyPhonePage() {
@@ -118,7 +118,8 @@ export default function VerifyPhonePage() {
       try {
         await updateDoc(doc(db, 'users', user.uid), {
           phoneNumber: user.phoneNumber || phoneNumber,
-          phoneVerified: true
+          phoneVerified: true,
+          updatedAt: serverTimestamp()
         });
       } catch (dbError) {
         handleFirestoreError(dbError, OperationType.UPDATE, path);

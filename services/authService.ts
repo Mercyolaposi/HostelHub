@@ -2,7 +2,7 @@ import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { User as AppUser } from '@/types';
-import { handleFirestoreError } from '@/lib/firebase-errors';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 
 export const registerUser = async (email: string, password: string, name: string, role: 'student' | 'manager' | 'guest') => {
   try {
@@ -22,7 +22,7 @@ export const registerUser = async (email: string, password: string, name: string
     try {
       await setDoc(doc(db, 'users', user.uid), userData);
     } catch (dbError) {
-      handleFirestoreError(dbError, 'create', path);
+      handleFirestoreError(dbError, OperationType.CREATE, path);
     }
 
     return { user, userData };
@@ -48,7 +48,7 @@ export const loginUser = async (email: string, password: string): Promise<{ user
         throw new Error("User profile not found in database.");
       }
     } catch (dbError) {
-      handleFirestoreError(dbError, 'get', path);
+      handleFirestoreError(dbError, OperationType.GET, path);
     }
   } catch (error: any) {
     if (error instanceof Error && error.message.includes('{')) throw error; 
