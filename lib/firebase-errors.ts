@@ -62,7 +62,7 @@ export function handleFirestoreError(
     const jsonError = JSON.stringify(errorInfo);
     console.error('🔥 [PRO-DEV DIAGNOSTICS] Firestore Permission Denied:', jsonError);
     
-    // Create a new error with the JSON payload so the UI or AI can parse it
+    // Create a new error with the JSON payload so the UI can parse it
     const enhancedError = new Error(jsonError);
     (enhancedError as any).code = 'permission-denied';
     throw enhancedError;

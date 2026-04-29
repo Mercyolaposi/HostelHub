@@ -15,7 +15,7 @@ const envConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Fallback to local config file if env vars are missing (for legacy or AI Studio execution)
+// Fallback to local config file if env vars are missing
 let firebaseConfig = envConfig;
 if (!envConfig.apiKey) {
   try {
