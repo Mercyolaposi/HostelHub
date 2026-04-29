@@ -45,10 +45,10 @@ service cloud.firestore {
     }
 
     function isValidHostel(data) {
-      return data.managerId is string && data.managerId.size() <= 128 &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
-             data.location is string && data.location.size() <= 100 &&
-             data.address is string && data.address.size() <= 200 &&
+      return data.managerId is string &&
+             data.name is string &&
+             data.location is string &&
+             data.address is string &&
              data.createdAt == request.time;
     }
 
@@ -92,6 +92,12 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isOwner(get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId) || isAdmin();
       }
+
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isVerified() && isOwner(incoming().userId);
+        allow update, delete: if isOwner(existing().userId) || isAdmin();
+      }
     }
 
     match /{path=**}/rooms/{roomId} {
@@ -117,12 +123,6 @@ service cloud.firestore {
       allow read: if isSignedIn() && (isOwner(existing().userId) || isOwner(existing().managerId) || isAdmin());
       allow create: if isVerified() && isOwner(incoming().userId);
       allow update: if isAdmin() || isOwner(existing().managerId);
-    }
-
-    match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isVerified() && isOwner(incoming().userId);
-      allow update, delete: if isOwner(existing().userId) || isAdmin();
     }
   }
 }
