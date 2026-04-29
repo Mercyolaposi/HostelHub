@@ -112,7 +112,7 @@ export const getManagerAnalytics = async (managerId: string) => {
     if (hostelIds.length === 0) {
       return {
         totalRevenue: 0,
-        totalBookings: 0,
+        totalPaid: 0, pendingBalance: 0, payoutHistory: [], totalBookings: 0,
         paidBookings: 0,
         unpaidBookings: 0,
         occupancyRate: 0,

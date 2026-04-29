@@ -1,6 +1,6 @@
 import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { User as AppUser } from '@/types';
 import { handleFirestoreError } from '@/lib/firebase-errors';
 
@@ -14,7 +14,7 @@ export const registerUser = async (email: string, password: string, name: string
       email: user.email!,
       role,
       displayName: name,
-      createdAt: new Date()
+      createdAt: serverTimestamp()
     };
 
     // Store user role and profile in Firestore
