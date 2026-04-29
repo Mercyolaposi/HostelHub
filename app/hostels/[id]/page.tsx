@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
-import { adminDb } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import HostelClient from './hostel-client';
 
 type Props = {
@@ -9,16 +10,17 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = params;
 
-  if (!adminDb) {
+  if (!db) {
     return {
       title: 'Hostel Details',
     };
   }
 
   try {
-    const docSnap = await adminDb.collection('hostels').doc(id).get();
+    const docRef = doc(db, 'hostels', id);
+    const docSnap = await getDoc(docRef);
     
-    if (!docSnap.exists) {
+    if (!docSnap.exists()) {
       return {
         title: 'Hostel Not Found',
       };
