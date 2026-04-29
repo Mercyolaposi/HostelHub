@@ -138,6 +138,12 @@ service cloud.firestore {
       allow create: if isVerified() && isOwner(incoming().userId) && incoming().status == 'pending';
       allow update: if isAdmin();
     }
+
+    match /payouts/{payoutId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().managerId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
     
     match /complaints/{complaintId} {
       allow read: if isSignedIn() && (isOwner(existing().userId) || isOwner(existing().managerId) || isAdmin());

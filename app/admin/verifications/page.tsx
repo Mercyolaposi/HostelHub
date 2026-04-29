@@ -99,7 +99,7 @@ export default function AdminVerificationsPage() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-4">
                       <h3 className="text-xl md:text-2xl font-heading font-bold uppercase tracking-tighter text-slate-900">
-                        {v.managerName || v.user?.displayName || 'Unknown Manager'}
+                        {v.managerName !== 'Unknown' ? v.managerName : (v.user?.displayName || v.user?.email || 'Unknown Manager')}
                       </h3>
                       {(v.managerEmail || v.user?.email) && (
                         <a href={`mailto:${v.managerEmail || v.user?.email}`} className="text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:text-blue-800 border border-blue-200 bg-blue-50 px-3 py-1.5 transition-colors">
