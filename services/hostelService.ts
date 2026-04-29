@@ -1,7 +1,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, orderBy, collectionGroup, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
 import { Hostel, Room, Review } from '@/types';
-import { uploadToCloudinary } from './cloudinaryService';
+import { uploadFileResized } from './uploadService';
 import { handleFirestoreError } from '@/lib/firebase-errors';
 
 export const createHostel = async (managerId: string, hostelData: Partial<Hostel>, imageFiles: File[]) => {
@@ -9,7 +9,7 @@ export const createHostel = async (managerId: string, hostelData: Partial<Hostel
     // 1. Upload images
     const imageUrls: string[] = [];
     for (const file of imageFiles) {
-      const url = await uploadToCloudinary(file, `hostel_images/${managerId}`);
+      const url = await uploadFileResized(file, `hostel_images/${managerId}`);
       imageUrls.push(url);
     }
 
@@ -53,17 +53,6 @@ export const getManagerHostels = async (managerId: string) => {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hostel));
   } catch (error: any) {
     console.error('Error getting manager hostels:', error);
-    throw new Error(error.message || 'Failed to get hostels');
-  }
-};
-
-export const getAllVerifiedHostels = async () => {
-  try {
-    const q = query(collection(db, 'hostels'), where('isVerified', '==', true));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hostel));
-  } catch (error: any) {
-    console.error('Error getting verified hostels:', error);
     throw new Error(error.message || 'Failed to get hostels');
   }
 };
@@ -113,33 +102,6 @@ export const getVerifiedHostelsPaginated = async (
   }
 };
 
-export const getAllVerifiedHostelsWithRooms = async () => {
-  try {
-    const hostels = await getAllVerifiedHostels();
-    if (hostels.length === 0) return [];
-
-    // Optimize: Fetch all rooms using collectionGroup in one go
-    const roomsSnapshot = await getDocs(collectionGroup(db, 'rooms'));
-    const allRooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
-
-    // Group rooms by hostelId
-    const roomsByHostel: Record<string, Room[]> = {};
-    allRooms.forEach(room => {
-      if (!roomsByHostel[room.hostelId]) {
-        roomsByHostel[room.hostelId] = [];
-      }
-      roomsByHostel[room.hostelId].push(room);
-    });
-
-    return hostels.map(hostel => ({
-      ...hostel,
-      rooms: roomsByHostel[hostel.id!] || []
-    }));
-  } catch (error: any) {
-    console.error('Error getting hostels with rooms:', error);
-    throw new Error(error.message || 'Failed to get hostels with rooms');
-  }
-};
 export const getHostelById = async (hostelId: string) => {
   try {
     const docRef = doc(db, 'hostels', hostelId);

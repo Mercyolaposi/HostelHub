@@ -1,0 +1,33 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Global function to ensure the user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Ensure the uploaded file is an image and under 5MB
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') 
+             && request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+
+    match /hostel_images/{managerId}/{fileName} {
+      // Only managers can upload into their own folder (or any signed in user depending on role setup, using uid for simplicity)
+      // Since managerId is the folder name, we enforce that the auth uid matches the managerId folder
+      allow read: if true; // Public can read hostel images
+      allow write: if isSignedIn() && request.auth.uid == managerId && isValidImage();
+    }
+    
+    match /manager_documents/{userId}/{fileName} {
+      allow read: if isSignedIn() && request.auth.uid == userId; // Or an admin
+      allow write: if isSignedIn() && request.auth.uid == userId && isValidImage();
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

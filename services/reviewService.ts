@@ -6,33 +6,26 @@ import { handleFirestoreError } from '@/lib/firebase-errors';
 export const submitReview = async (review: Omit<Review, 'id' | 'createdAt'>) => {
   const path = `hostels/${review.hostelId}/reviews`;
   try {
-    // Add the review document
-    const reviewRef = await addDoc(collection(db, path), {
-      ...review,
-      createdAt: serverTimestamp(),
+    const { getAuth } = await import('firebase/auth');
+    const auth = getAuth();
+    const token = await auth.currentUser?.getIdToken();
+
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(review),
     });
 
-    // Update the hostel's average rating
-    const reviewsSnapshot = await getDocs(collection(db, path));
-    let totalRating = 0;
-    let count = 0;
-    
-    reviewsSnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.rating) {
-        totalRating += data.rating;
-        count++;
-      }
-    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to submit review');
+    }
 
-    const newAverage = count > 0 ? totalRating / count : 0;
-    
-    const hostelRef = doc(db, 'hostels', review.hostelId);
-    await updateDoc(hostelRef, {
-      rating: newAverage
-    });
-
-    return reviewRef.id;
+    const data = await response.json();
+    return data.reviewId;
   } catch (error: any) {
     if (error instanceof Error && error.message.includes('{')) throw error;
     handleFirestoreError(error, 'write', path);

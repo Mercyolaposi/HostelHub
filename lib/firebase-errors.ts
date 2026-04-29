@@ -1,4 +1,5 @@
 import { auth } from './firebase';
+import * as Sentry from "@sentry/nextjs";
 
 export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
 
@@ -43,6 +44,13 @@ export function handleFirestoreError(
       })),
     } : null,
   };
+
+  Sentry.withScope((scope) => {
+    scope.setExtra("operationType", operationType);
+    scope.setExtra("path", path);
+    scope.setExtra("authInfo", errorInfo.authInfo || "unauthenticated");
+    Sentry.captureException(error);
+  });
 
   // Check for permission denied errors specifically
   if (

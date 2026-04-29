@@ -2,7 +2,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { createNotification } from './notificationService';
 import { sendManagerVerificationEmail } from './emailService';
-import { uploadToCloudinary } from './cloudinaryService';
+import { uploadFileResized } from './uploadService';
 
 export interface ManagerVerification {
   id?: string;
@@ -27,10 +27,10 @@ export const submitVerification = async (
 ) => {
   try {
     // 1. Upload ID Document
-    const idDocumentUrl = await uploadToCloudinary(idDocumentFile, `manager_documents/${userId}`);
+    const idDocumentUrl = await uploadFileResized(idDocumentFile, `manager_documents/${userId}`);
 
     // 2. Upload Property Proof
-    const propertyProofUrl = await uploadToCloudinary(propertyProofFile, `manager_documents/${userId}`);
+    const propertyProofUrl = await uploadFileResized(propertyProofFile, `manager_documents/${userId}`);
 
     // 3. Create Verification Document
     const verificationData = {

@@ -86,8 +86,7 @@ service cloud.firestore {
       allow update: if isAdmin() ||
                        (isOwner(existing().managerId) && 
                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'location', 'address', 'amenities', 'images', 'policies', 'contactDetails', 'coordinates', 'updatedAt']) &&
-                        (!('updatedAt' in incoming()) || incoming().updatedAt == request.time)) ||
-                       (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['rating']));
+                        (!('updatedAt' in incoming()) || incoming().updatedAt == request.time));
       allow delete: if isAdmin();
       
       match /rooms/{roomId} {
@@ -97,8 +96,7 @@ service cloud.firestore {
 
       match /reviews/{reviewId} {
         allow read: if true;
-        allow create: if isVerified() && isOwner(incoming().userId);
-        allow update, delete: if isOwner(existing().userId) || isAdmin();
+        allow write: if false; // Only accessible via backend API route
       }
     }
 

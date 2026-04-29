@@ -1,13 +1,12 @@
 import useSWR from 'swr';
 import { useState, useCallback } from 'react';
-import { getAllVerifiedHostelsWithRooms, getHostelById, getHostelRooms, getVerifiedHostelsPaginated } from '@/services/hostelService';
+import { getHostelById, getHostelRooms, getVerifiedHostelsPaginated } from '@/services/hostelService';
 import { getHostelReviews } from '@/services/reviewService';
 import { doc, getDoc, DocumentSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Room } from '@/types';
 
 // Fetcher functions
-const hostelsFetcher = () => getAllVerifiedHostelsWithRooms();
 const hostelFetcher = (id: string) => getHostelById(id);
 const roomsFetcher = (id: string) => getHostelRooms(id);
 const reviewsFetcher = (id: string) => getHostelReviews(id);
@@ -51,19 +50,7 @@ export function useHostelsPaginated(pageSize = 12) {
   };
 }
 
-export function useHostels() {
-  const { data, error, isLoading, mutate } = useSWR('hostels', hostelsFetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60000, // 1 minute
-  });
 
-  return {
-    hostels: data || [],
-    isLoading,
-    isError: error,
-    mutate,
-  };
-}
 
 export function useHostelDetails(id: string) {
   const { data: hostel, error: hostelError, isLoading: hostelLoading } = useSWR(
