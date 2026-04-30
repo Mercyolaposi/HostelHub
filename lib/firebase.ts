@@ -16,12 +16,12 @@ const envConfig = {
 };
 
 // Fallback to local config file if env vars are missing
-let firebaseConfig = envConfig;
+let firebaseConfig: any = envConfig;
 if (!envConfig.apiKey) {
   try {
-    firebaseConfig = require('../firebase-config.json');
+    firebaseConfig = require('../firebase-applet-config.json');
   } catch (e) {
-    console.error("Firebase config not found. Please provide NEXT_PUBLIC_FIREBASE_* env vars or firebase-config.json");
+    console.warn("Firebase config not found. Please provide NEXT_PUBLIC_FIREBASE_* env vars or firebase-applet-config.json");
   }
 }
 
@@ -29,6 +29,6 @@ if (!envConfig.apiKey) {
 const app = !getApps().length && firebaseConfig?.apiKey ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Firestore with the specific database ID if provided in the config
-export const db = getFirestore(app, (firebaseConfig as any)?.firestoreDatabaseId || undefined);
+export const db = getFirestore(app, firebaseConfig?.firestoreDatabaseId || undefined);
 export const auth = getAuth(app);
 export const storage = getStorage(app);

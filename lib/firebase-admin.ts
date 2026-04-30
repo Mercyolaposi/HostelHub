@@ -3,9 +3,9 @@ import * as admin from 'firebase-admin';
 let firebaseConfig: any = { projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID };
 if (!firebaseConfig.projectId) {
   try {
-    firebaseConfig = require('../firebase-config.json');
+    firebaseConfig = require('../firebase-applet-config.json');
   } catch (e) {
-    console.error("Firebase config not found for admin setup.");
+    console.warn("Firebase config not found for admin setup.");
   }
 }
 
