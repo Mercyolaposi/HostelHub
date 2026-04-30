@@ -14,7 +14,7 @@ export const registerUser = async (email: string, password: string, name: string
       email: user.email!,
       role,
       displayName: name,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp() as any
     };
 
     // Store user role and profile in Firestore

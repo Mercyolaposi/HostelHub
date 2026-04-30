@@ -1,6 +1,6 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { handleFirestoreError } from '@/lib/firebase-errors';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 
 export const getAdminStats = async () => {
   const path = 'users/bookings/hostels';
@@ -61,6 +61,6 @@ export const getAdminStats = async () => {
       }
     };
   } catch (error: any) {
-    handleFirestoreError(error, 'list', path);
+    handleFirestoreError(error, OperationType.LIST, path);
   }
 };

@@ -2,7 +2,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, serverTimestamp, getDoc, orderBy, collectionGroup, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
 import { Hostel, Room, Review } from '@/types';
 import { uploadFileResized } from './uploadService';
-import { handleFirestoreError } from '@/lib/firebase-errors';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 
 export const createHostel = async (managerId: string, hostelData: Partial<Hostel>, imageFiles: File[]) => {
   try {
@@ -37,7 +37,7 @@ export const createHostel = async (managerId: string, hostelData: Partial<Hostel
       const docRef = await addDoc(collection(db, path), newHostel);
       return docRef.id;
     } catch (dbError) {
-      handleFirestoreError(dbError, 'create', path);
+      handleFirestoreError(dbError, OperationType.CREATE, path);
     }
   } catch (error: any) {
     if (error instanceof Error && error.message.includes('{')) throw error;

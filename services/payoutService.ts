@@ -19,7 +19,7 @@ export const getManagerBalances = async () => {
   try {
     // Fetch managers
     const usersSnapshot = await getDocs(query(collection(db, 'users'), where('role', '==', 'manager')));
-    const managers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    const managers = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
 
     // Fetch hostels to map bookings to managers
     const hostelsSnapshot = await getDocs(query(collection(db, 'hostels')));

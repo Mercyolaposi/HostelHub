@@ -3,12 +3,9 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import HostelClient from './hostel-client';
 
-type Props = {
-  params: Promise<{ id: string }>
-};
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+export async function generateMetadata(props: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const params = await props.params;
+  const { id } = params;
 
   if (!db) {
     return {

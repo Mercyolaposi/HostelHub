@@ -80,31 +80,30 @@ describe('bookingService', () => {
   });
 
   describe('getManagerBookings', () => {
-    it('should chunk requests if more than 30 hostels are provided', async () => {
-      const mockHostelIds = Array.from({ length: 45 }, (_, i) => `hostel-${i}`);
+    it('should query bookings by managerId', async () => {
+      const mockManagerId = 'manager-123';
       const mockBookings = [
-        { id: 'booking-1', hostelId: 'hostel-1', createdAt: { toDate: () => new Date('2024-01-01') } },
-        { id: 'booking-2', hostelId: 'hostel-35', createdAt: { toDate: () => new Date('2024-01-02') } },
+        { id: 'booking-1', managerId: mockManagerId, createdAt: { toDate: () => new Date('2024-01-01') } },
       ];
 
       const mockQuerySnapshot = {
         docs: [
           { id: 'booking-1', data: () => mockBookings[0] },
-          { id: 'booking-2', data: () => mockBookings[1] },
         ],
       };
 
       vi.mocked(getDocs).mockResolvedValue(mockQuerySnapshot as any);
 
-      const result = await getManagerBookings(mockHostelIds);
+      const result = await getManagerBookings(mockManagerId);
 
-      expect(getDocs).toHaveBeenCalledTimes(2); // 45 hostels = 30 + 15 (2 chunks)
-      expect(result).toHaveLength(4); // 2 docs per chunk * 2 chunks
-      expect(result[0].id).toBe('booking-2'); // Sorted by date desc
+      expect(getDocs).toHaveBeenCalledTimes(1);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('booking-1');
+      expect(where).toHaveBeenCalledWith('managerId', '==', mockManagerId);
     });
 
-    it('should return empty array if no hostelIds are provided', async () => {
-      const result = await getManagerBookings([]);
+    it('should return empty array if no managerId is provided', async () => {
+      const result = await getManagerBookings('');
       expect(result).toEqual([]);
     });
   });

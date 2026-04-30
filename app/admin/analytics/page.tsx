@@ -129,7 +129,7 @@ export default function AdminAnalytics() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} tickFormatter={(val) => `GH₵${val}`} />
                   <Tooltip 
                     contentStyle={{ borderRadius: 0, border: '1px solid #0f172a', boxShadow: 'none' }}
-                    formatter={(value: number) => [`GH₵${value.toLocaleString()}`, 'Revenue']}
+                    formatter={(value: any) => [`GH₵${Number(value).toLocaleString()}`, 'Revenue']}
                   />
                   <Line type="monotone" dataKey="revenue" stroke="#0f172a" strokeWidth={2} dot={{ r: 4, fill: '#0f172a' }} activeDot={{ r: 6 }} />
                 </LineChart>
@@ -147,7 +147,7 @@ export default function AdminAnalytics() {
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#0f172a', fontWeight: 'bold' }} />
                   <Tooltip 
                     contentStyle={{ borderRadius: 0, border: '1px solid #0f172a', boxShadow: 'none' }}
-                    formatter={(value: number) => [`GH₵${value.toLocaleString()}`, 'Revenue']}
+                    formatter={(value: any) => [`GH₵${Number(value).toLocaleString()}`, 'Revenue']}
                   />
                   <Bar dataKey="revenue" fill="#0f172a" radius={[0, 4, 4, 0]} barSize={24} />
                 </BarChart>

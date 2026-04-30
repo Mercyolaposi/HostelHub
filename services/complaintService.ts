@@ -2,7 +2,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
 import { Complaint } from '@/types';
 import { createNotification } from './notificationService';
-import { handleFirestoreError } from '@/lib/firebase-errors';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 
 export const submitComplaint = async (complaint: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'adminVisible'>) => {
   const path = 'complaints';
@@ -29,7 +29,7 @@ export const submitComplaint = async (complaint: Omit<Complaint, 'id' | 'created
     return docRef.id;
   } catch (error: any) {
     if (error instanceof Error && error.message.includes('{')) throw error;
-    handleFirestoreError(error, 'write', path);
+    handleFirestoreError(error, OperationType.WRITE, path);
   }
 };
 

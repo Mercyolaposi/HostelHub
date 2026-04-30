@@ -123,9 +123,9 @@ export default function ManagerAnalytics() {
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dx={-10} allowDecimals={false} />
                     <Tooltip 
-                      contentStyle={{ borderRadius: 0, border: '1px solid #0f172a', boxShadow: 'none' }}
-                      formatter={(value: number) => [value, 'Bookings']}
-                    />
+                    contentStyle={{ borderRadius: 0, border: '1px solid #0f172a', boxShadow: 'none' }}
+                    formatter={(value: any) => [value, 'Bookings']}
+                  />
                     <Bar dataKey="bookings" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={40} />
                   </BarChart>
                 </ResponsiveContainer>

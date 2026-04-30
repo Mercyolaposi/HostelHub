@@ -28,8 +28,9 @@ describe('complaintService', () => {
       const mockComplaint = {
         userId: 'user123',
         hostelId: 'hostel123',
+        managerId: 'manager123',
         title: 'Broken fan',
-        description: 'The fan in room 101 is not working',
+        message: 'The fan in room 101 is not working',
       };
       const mockDocRef = { id: 'complaint123' };
       vi.mocked(addDoc).mockResolvedValue(mockDocRef as any);
@@ -58,20 +59,22 @@ describe('complaintService', () => {
   });
 
   describe('getManagerComplaints', () => {
-    it('should return complaints for multiple hostels', async () => {
+    it('should query complaints by managerId', async () => {
+      const mockManagerId = 'manager-123';
       const mockDocs = [
-        { id: 'c1', data: () => ({ hostelId: 'h1', title: 'C1' }) },
+        { id: 'c1', data: () => ({ hostelId: 'h1', title: 'C1', managerId: mockManagerId }) },
       ];
       vi.mocked(getDocs).mockResolvedValue({ docs: mockDocs } as any);
 
-      const result = await getManagerComplaints(['h1', 'h2']);
+      const result = await getManagerComplaints(mockManagerId);
 
-      expect(getDocs).toHaveBeenCalled();
+      expect(getDocs).toHaveBeenCalledTimes(1);
       expect(result).toHaveLength(1);
+      expect(where).toHaveBeenCalledWith('managerId', '==', mockManagerId);
     });
 
-    it('should return empty array if no hostel IDs provided', async () => {
-      const result = await getManagerComplaints([]);
+    it('should return empty array if no managerId provided', async () => {
+      const result = await getManagerComplaints('');
       expect(result).toEqual([]);
     });
   });

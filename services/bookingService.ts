@@ -3,7 +3,7 @@ import { collection, doc, runTransaction, serverTimestamp, query, where, getDocs
 import { Booking, Room, Hostel } from '@/types';
 import { createNotification } from './notificationService';
 import { sendBookingConfirmationEmail } from './emailService';
-import { handleFirestoreError } from '@/lib/firebase-errors';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 
 export const createBooking = async (
   hostelId: string,
@@ -89,7 +89,7 @@ export const createBooking = async (
     return bookingId;
   } catch (error: any) {
     if (error instanceof Error && error.message.includes('{')) throw error;
-    handleFirestoreError(error, 'write', path);
+    handleFirestoreError(error, OperationType.WRITE, path);
   }
 };
 

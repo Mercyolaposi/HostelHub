@@ -19,7 +19,7 @@ export const getAdminAnalytics = async () => {
 
     // Fetch all users (managers)
     const usersSnapshot = await getDocs(query(collection(db, 'users'), where('role', '==', 'manager')));
-    const managers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    const managers = usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User));
 
     // 1. Total System Revenue & Paid vs Unpaid
     let totalRevenue = 0;

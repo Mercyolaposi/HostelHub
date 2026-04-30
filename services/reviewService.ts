@@ -1,7 +1,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { Review } from '@/types';
-import { handleFirestoreError } from '@/lib/firebase-errors';
+import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
 
 export const submitReview = async (review: Omit<Review, 'id' | 'createdAt'>) => {
   const path = `hostels/${review.hostelId}/reviews`;
@@ -42,7 +42,7 @@ export const submitReview = async (review: Omit<Review, 'id' | 'createdAt'>) => 
   } catch (error: any) {
     console.error('Error submitting review:', error);
     if (error instanceof Error && error.message.includes('{')) throw error;
-    handleFirestoreError(error, 'write', path);
+    handleFirestoreError(error, OperationType.WRITE, path);
   }
 };
 

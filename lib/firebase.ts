@@ -21,7 +21,7 @@ if (!envConfig.apiKey) {
   try {
     firebaseConfig = require('../firebase-applet-config.json');
   } catch (e) {
-    console.warn("Firebase config not found. Please provide NEXT_PUBLIC_FIREBASE_* env vars or firebase-applet-config.json");
+    console.warn("Firebase config not found. Please provide NEXT_PUBLIC_FIREBASE_* env vars.");
   }
 }
 
