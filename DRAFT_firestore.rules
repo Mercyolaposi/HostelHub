@@ -2,23 +2,13 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ----------------------------------------------------------------------
-    // Primitives & Helpers
-    // ----------------------------------------------------------------------
+    // Phase 4: Primitive Definition
     function isSignedIn() { return request.auth != null; }
     function isAdmin() { 
-      return isSignedIn() 
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    function isManager() {
-      return isSignedIn() 
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     function existing() { return resource.data; }
     function incoming() { return request.resource.data; }
-    
     function isValidId(id) { 
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
     }
@@ -28,22 +18,23 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ----------------------------------------------------------------------
+    // Role helpers
+    function isManager() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    // ==========================================
     // Users Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'role', 'createdAt', 'email'])
+      return data.keys().hasAll(['uid', 'role', 'createdAt'])
         && data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128
-        && data.email is string && data.email.size() > 0 && data.email.size() <= 200
         && data.role is string && (data.role == 'student' || data.role == 'guest' || data.role == 'manager' || data.role == 'admin')
-        && data.createdAt is timestamp
-        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 200))
-        && (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 50))
-        && (!('phoneVerified' in data) || data.phoneVerified is bool);
+        && data.createdAt is timestamp;
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn(); 
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
       
       allow create: if isSignedIn() 
@@ -51,16 +42,17 @@ service cloud.firestore {
         && isValidId(userId)
         && isValidUser(incoming())
         && incoming().uid == request.auth.uid
-        && incoming().role != 'admin'
+        && incoming().role != 'admin' // Users cannot self-assign admin role
         && incoming().createdAt == request.time;
       
-      allow update: if isSignedIn() && isValidId(userId) && isValidUser(incoming())
+      allow update: if isSignedIn() 
         && (
           isAdmin() || 
           (
             request.auth.uid == userId 
+            && isValidUser(incoming())
             && incoming().uid == existing().uid
-            && incoming().role == existing().role
+            && incoming().role == existing().role // Keep role immutable
             && incoming().createdAt == existing().createdAt
           )
         );
@@ -68,29 +60,21 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // Hostels Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidHostel(data) {
-      return data.keys().hasAll(['managerId', 'name', 'location', 'address', 'distanceFromCampus', 'amenities', 'images', 'rating', 'isVerified', 'createdAt'])
+      return data.keys().hasAll(['managerId', 'name', 'location', 'address', 'createdAt'])
         && data.managerId is string && data.managerId.size() > 0 && data.managerId.size() <= 128
         && data.name is string && data.name.size() > 0 && data.name.size() <= 200
-        && data.location is string && data.location.size() > 0 && data.location.size() <= 300
+        && data.location is string && data.location.size() > 0 && data.location.size() <= 200
         && data.address is string && data.address.size() > 0 && data.address.size() <= 500
-        && data.distanceFromCampus is number
-        && data.amenities is list && data.amenities.size() <= 50
-        && data.images is list && data.images.size() <= 20
-        && data.rating is number
-        && data.isVerified is bool
-        && data.createdAt is timestamp
-        && (!('policies' in data) || (data.policies is list && data.policies.size() <= 50))
-        && (!('contactDetails' in data) || data.contactDetails is map)
-        && (!('coordinates' in data) || data.coordinates is map);
+        && data.createdAt is timestamp;
     }
 
     match /hostels/{hostelId} {
-      allow get: if true; 
-      allow list: if true; 
+      allow get: if true; // Publicly viewable
+      allow list: if true; // Publicly viewable
 
       allow create: if isManager() 
         && isValidId(hostelId)
@@ -98,54 +82,54 @@ service cloud.firestore {
         && incoming().managerId == request.auth.uid
         && incoming().createdAt == request.time;
 
-      allow update: if isValidId(hostelId) && isValidHostel(incoming()) && (
-          isAdmin() 
-          || (
-            isManager() 
-            && existing().managerId == request.auth.uid 
-            && incoming().managerId == existing().managerId 
-            && incoming().createdAt == existing().createdAt 
-          ) 
-          || (
-            isSignedIn()
-            && incoming().diff(existing()).affectedKeys().hasOnly(['rating'])
-          )
-      );
+      allow update: if isValidId(hostelId) && (isAdmin() || (
+        isManager() 
+        && existing().managerId == request.auth.uid 
+        && isValidHostel(incoming())
+        && incoming().managerId == existing().managerId 
+        && incoming().createdAt == existing().createdAt 
+      ));
 
       allow delete: if isAdmin() || (isManager() && existing().managerId == request.auth.uid);
 
+      // ==========================================
       // Rooms Subcollection
+      // ==========================================
       function isValidRoom(data) {
-        return data.keys().hasAll(['hostelId', 'roomNumber', 'type', 'pricePerSemester', 'capacity', 'occupiedBeds', 'isAvailable'])
+        return data.keys().hasAll(['hostelId', 'roomNumber', 'type', 'pricePerSemester', 'capacity', 'occupiedBeds'])
           && data.hostelId is string && data.hostelId.size() > 0 && data.hostelId.size() <= 128
           && data.roomNumber is string && data.roomNumber.size() > 0 && data.roomNumber.size() <= 100
           && data.type is string && data.type.size() > 0 && data.type.size() <= 100
           && data.pricePerSemester is number
           && data.capacity is number
-          && data.occupiedBeds is number
-          && data.isAvailable is bool;
+          && data.occupiedBeds is number;
       }
 
       match /rooms/{roomId} {
         allow get: if true;
         allow list: if true;
 
-        allow create: if isValidId(hostelId) && isValidId(roomId) && isValidRoom(incoming()) && (isAdmin() || (
+        allow create: if isValidId(hostelId) && isValidId(roomId) && (isAdmin() || (
           isManager() 
           && get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId == request.auth.uid
+          && isValidRoom(incoming())
           && incoming().hostelId == hostelId
         ));
 
-        allow update: if isValidId(hostelId) && isValidId(roomId) && isValidRoom(incoming()) && (
-          isAdmin() || (
-            isManager() 
-            && get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId == request.auth.uid
-            && incoming().hostelId == existing().hostelId
-          ) || (
-            isSignedIn() 
-            && incoming().diff(existing()).affectedKeys().hasOnly(['occupiedBeds', 'isAvailable'])
-          )
-        );
+        allow update: if isValidId(hostelId) && isValidId(roomId) && (isAdmin() || (
+          isManager() 
+          && get(/databases/$(database)/documents/hostels/$(hostelId)).data.managerId == request.auth.uid
+          && isValidRoom(incoming())
+          && incoming().hostelId == existing().hostelId
+        ) || (
+          // Allow system updates via client if needed? E.g., adding occupied beds. Better to do it via transactions
+          // We will strictly allow users to increment occupiedBeds only if they're making a booking... wait, atomic transactions handled by service.
+          // Since the client directly hits Firestore for bookings, the student runs a transaction.
+          isSignedIn() 
+          && incoming().diff(existing()).affectedKeys().hasOnly(['occupiedBeds', 'isAvailable'])
+          && incoming().occupiedBeds is number
+          // && incoming().occupiedBeds <= existing().capacity
+        ));
 
         allow delete: if isValidId(hostelId) && isValidId(roomId) && (isAdmin() || (
           isManager() 
@@ -153,14 +137,16 @@ service cloud.firestore {
         ));
       }
 
+      // ==========================================
       // Reviews Subcollection
+      // ==========================================
       function isValidReview(data) {
         return data.keys().hasAll(['hostelId', 'userId', 'userName', 'rating', 'comment', 'createdAt'])
-          && data.hostelId is string && data.hostelId.size() >= 0 && data.hostelId.size() <= 128
+          && data.hostelId is string && data.hostelId.size() > 0 && data.hostelId.size() <= 128
           && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
           && data.userName is string && data.userName.size() > 0 && data.userName.size() <= 200
           && data.rating is number && data.rating >= 1 && data.rating <= 5
-          && data.comment is string && data.comment.size() >= 0 && data.comment.size() <= 5000
+          && data.comment is string && data.comment.size() >= 0 && data.comment.size() <= 2000
           && data.createdAt is timestamp;
       }
 
@@ -171,35 +157,27 @@ service cloud.firestore {
         allow create: if isSignedIn()
           && isValidId(hostelId) && isValidId(reviewId)
           && isValidReview(incoming())
-          && (incoming().hostelId == hostelId || incoming().hostelId == '')
+          && incoming().hostelId == hostelId
           && incoming().userId == request.auth.uid
           && incoming().createdAt == request.time;
           
-        allow update: if false; 
+        allow update: if false; // Reviews cannot be updated
         allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
       }
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // Bookings Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidBooking(data) {
-      return data.keys().hasAll(['hostelId', 'roomId', 'studentId', 'studentEmail', 'status', 'amount', 'paymentStatus', 'createdAt'])
+      return data.keys().hasAll(['hostelId', 'roomId', 'studentId', 'status', 'amount', 'paymentStatus', 'createdAt'])
         && data.hostelId is string && data.hostelId.size() > 0 && data.hostelId.size() <= 128
         && data.roomId is string && data.roomId.size() > 0 && data.roomId.size() <= 128
         && data.studentId is string && data.studentId.size() > 0 && data.studentId.size() <= 128
-        && data.studentEmail is string && data.studentEmail.size() > 0 && data.studentEmail.size() <= 200
         && data.status is string && (data.status == 'pending' || data.status == 'approved' || data.status == 'confirmed' || data.status == 'cancelled')
         && data.amount is number
         && data.paymentStatus is string && (data.paymentStatus == 'pending' || data.paymentStatus == 'paid' || data.paymentStatus == 'cancelled')
-        && data.createdAt is timestamp
-        && (!('hostelName' in data) || data.hostelName is string)
-        && (!('managerId' in data) || data.managerId is string)
-        && (!('roomNumber' in data) || data.roomNumber is string)
-        && (!('semester' in data) || data.semester is string)
-        && (!('paymentReference' in data) || data.paymentReference is string)
-        && (!('expiresAt' in data) || data.expiresAt is timestamp)
-        && (!('updatedAt' in data) || data.updatedAt is timestamp);
+        && data.createdAt is timestamp;
     }
 
     match /bookings/{bookingId} {
@@ -210,36 +188,31 @@ service cloud.firestore {
         && isValidId(bookingId)
         && isValidBooking(incoming())
         && incoming().studentId == request.auth.uid
-        && incoming().createdAt == request.time;
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/hostels/$(incoming().hostelId)/rooms/$(incoming().roomId));
       
-      allow update: if isValidId(bookingId) && isValidBooking(incoming()) && (
-        isAdmin() || (
-          isSignedIn() && existing().studentId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paymentStatus', 'paymentReference', 'updatedAt'])
-        ) || (
-          isManager() && existing().managerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
-        )
-      );
+      allow update: if isValidId(bookingId) && (isAdmin() || (
+        isSignedIn() && existing().studentId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paymentStatus', 'paymentReference', 'updatedAt'])
+      ) || (
+        isManager() && existing().managerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+      ));
       
       allow delete: if isAdmin();
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // Complaints Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidComplaint(data) {
-      return data.keys().hasAll(['userId', 'hostelId', 'managerId', 'title', 'message', 'status', 'adminVisible', 'createdAt', 'updatedAt'])
+      return data.keys().hasAll(['userId', 'hostelId', 'managerId', 'title', 'message', 'status', 'createdAt', 'updatedAt'])
         && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
         && data.hostelId is string && data.hostelId.size() > 0 && data.hostelId.size() <= 128
         && data.managerId is string && data.managerId.size() > 0 && data.managerId.size() <= 128
         && data.title is string && data.title.size() > 0 && data.title.size() <= 200
         && data.message is string && data.message.size() > 0 && data.message.size() <= 2000
-        && data.status is string && (data.status == 'pending' || data.status == 'in-progress' || data.status == 'resolved' || data.status == 'cancelled')
-        && data.adminVisible is bool
+        && data.status is string && (data.status == 'pending' || data.status == 'in-progress' || data.status == 'resolved')
         && data.createdAt is timestamp
-        && data.updatedAt is timestamp
-        && (!('image' in data) || data.image is string)
-        && (!('managerResponse' in data) || data.managerResponse is string)
-        && (!('resolvedAt' in data) || data.resolvedAt is timestamp);
+        && data.updatedAt is timestamp;
     }
 
     match /complaints/{complaintId} {
@@ -253,24 +226,24 @@ service cloud.firestore {
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
 
-      allow update: if isValidId(complaintId) && isValidComplaint(incoming()) && (
-        isAdmin() || (
-          isManager() 
-          && existing().managerId == request.auth.uid
-          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'managerResponse', 'updatedAt', 'resolvedAt'])
-        ) || (
-          isSignedIn()
-          && existing().userId == request.auth.uid
-          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
-        )
-      );
+      allow update: if isValidId(complaintId) && (isAdmin() || (
+        isManager() 
+        && existing().managerId == request.auth.uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'managerResponse', 'updatedAt', 'resolvedAt'])
+        && incoming().updatedAt == request.time
+      ) || (
+        isSignedIn()
+        && existing().userId == request.auth.uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && incoming().updatedAt == request.time
+      ));
 
       allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // Inquiries Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidInquiry(data) {
       return data.keys().hasAll(['hostelId', 'managerId', 'studentName', 'studentEmail', 'subject', 'message', 'status', 'createdAt'])
         && data.hostelId is string && data.hostelId.size() > 0 && data.hostelId.size() <= 128
@@ -280,8 +253,7 @@ service cloud.firestore {
         && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200
         && data.message is string && data.message.size() > 0 && data.message.size() <= 2000
         && data.status is string && (data.status == 'unread' || data.status == 'read' || data.status == 'replied')
-        && data.createdAt is timestamp
-        && (!('senderPhone' in data) || data.senderPhone is string);
+        && data.createdAt is timestamp;
     }
 
     match /inquiries/{inquiryId} {
@@ -292,27 +264,23 @@ service cloud.firestore {
         && isValidInquiry(incoming())
         && incoming().createdAt == request.time;
 
-      allow update: if isValidId(inquiryId) && isValidInquiry(incoming()) && (
-        isAdmin() || (
-          isManager() 
-          && existing().managerId == request.auth.uid
-          && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
-        )
-      );
+      allow update: if isValidId(inquiryId) && (isAdmin() || (
+        isManager() 
+        && existing().managerId == request.auth.uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      ));
 
-      allow delete: if isAdmin() || (isManager() && existing().managerId == request.auth.uid);
+      allow delete: if isAdmin();
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // Payouts Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidPayout(data) {
       return data.keys().hasAll(['managerId', 'amount', 'createdAt'])
         && data.managerId is string && data.managerId.size() > 0 && data.managerId.size() <= 128
         && data.amount is number
-        && data.createdAt is timestamp
-        && (!('reference' in data) || data.reference is string)
-        && (!('notes' in data) || data.notes is string);
+        && data.createdAt is timestamp;
     }
 
     match /payouts/{payoutId} {
@@ -328,9 +296,9 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // Notifications Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidNotification(data) {
       return data.keys().hasAll(['userId', 'type', 'title', 'message', 'isRead', 'createdAt'])
         && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
@@ -338,41 +306,38 @@ service cloud.firestore {
         && data.title is string && data.title.size() > 0 && data.title.size() <= 200
         && data.message is string && data.message.size() > 0 && data.message.size() <= 2000
         && data.isRead is bool
-        && data.createdAt is timestamp
-        && (!('actionUrl' in data) || data.actionUrl is string);
+        && data.createdAt is timestamp;
     }
 
     match /notifications/{notificationId} {
       allow get: if isSignedIn() && (isAdmin() || existing().userId == request.auth.uid);
       allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
 
+      // System generated notifications mostly, but client uses `addDoc`
       allow create: if isSignedIn()
         && isValidId(notificationId)
         && isValidNotification(incoming())
         && incoming().createdAt == request.time;
 
-      allow update: if isValidId(notificationId) && isValidNotification(incoming()) && (
-        isAdmin() || (
-          isSignedIn()
-          && existing().userId == request.auth.uid
-          && incoming().diff(existing()).affectedKeys().hasOnly(['isRead'])
-        )
-      );
+      allow update: if isValidId(notificationId) && (isAdmin() || (
+        isSignedIn()
+        && existing().userId == request.auth.uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isRead'])
+      ));
 
       allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
     }
 
-    // ----------------------------------------------------------------------
+    // ==========================================
     // ManagerVerifications Collection
-    // ----------------------------------------------------------------------
+    // ==========================================
     function isValidManagerVerification(data) {
       return data.keys().hasAll(['userId', 'idDocumentUrl', 'propertyProofUrl', 'status', 'submittedAt'])
         && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
         && data.idDocumentUrl is string && data.idDocumentUrl.size() > 0 && data.idDocumentUrl.size() <= 1000
         && data.propertyProofUrl is string && data.propertyProofUrl.size() > 0 && data.propertyProofUrl.size() <= 1000
         && data.status is string && (data.status == 'pending' || data.status == 'verified' || data.status == 'rejected')
-        && data.submittedAt is timestamp
-        && (!('updatedAt' in data) || data.updatedAt is timestamp);
+        && data.submittedAt is timestamp;
     }
 
     match /managerVerifications/{verificationId} {
@@ -385,13 +350,11 @@ service cloud.firestore {
         && incoming().userId == request.auth.uid
         && incoming().submittedAt == request.time;
 
-      allow update: if isValidId(verificationId) && isValidManagerVerification(incoming()) && (
-        isAdmin() || (
-          isSignedIn()
-          && existing().userId == request.auth.uid
-          && incoming().diff(existing()).affectedKeys().hasOnly(['idDocumentUrl', 'propertyProofUrl', 'updatedAt'])
-        )
-      );
+      allow update: if isValidId(verificationId) && (isAdmin() || (
+        isSignedIn()
+        && existing().userId == request.auth.uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['idDocumentUrl', 'propertyProofUrl', 'updatedAt'])
+      ));
 
       allow delete: if isAdmin();
     }

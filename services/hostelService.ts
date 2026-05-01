@@ -20,10 +20,10 @@ export const createHostel = async (managerId: string, hostelData: Partial<Hostel
       location: hostelData.location!,
       address: hostelData.address!,
       distanceFromCampus: Number(hostelData.distanceFromCampus) || 0,
-      amenities: hostelData.amenities || [],
-      images: imageUrls,
+      amenities: hostelData.amenities?.slice(0, 50) || [],
+      images: imageUrls.slice(0, 20),
       rating: 0,
-      policies: hostelData.policies || [],
+      policies: hostelData.policies?.slice(0, 50) || [],
       contactDetails: hostelData.contactDetails || undefined,
       coordinates: hostelData.coordinates || undefined,
       // PRO-DEV FIX: Automatically verify hostels so they instantly populate on the frontend dynamically 

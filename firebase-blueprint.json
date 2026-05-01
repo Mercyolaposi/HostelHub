@@ -2,23 +2,23 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Represents a user in the HostelHub system.",
+      "description": "User profile with role-based access",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "role": { "type": "string", "enum": ["student", "manager", "guest", "admin"] },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "guest", "manager", "admin"] },
         "displayName": { "type": "string" },
         "phoneNumber": { "type": "string" },
         "phoneVerified": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
-      "required": ["uid", "email", "role", "createdAt"]
+      "required": ["uid", "role"]
     },
     "Hostel": {
       "title": "Hostel",
-      "description": "Represents a hostel property.",
+      "description": "Hostel listing details",
       "type": "object",
       "properties": {
         "managerId": { "type": "string" },
@@ -26,82 +26,207 @@
         "location": { "type": "string" },
         "address": { "type": "string" },
         "distanceFromCampus": { "type": "number" },
-        "amenities": { "type": "array", "items": { "type": "string" } },
-        "images": { "type": "array", "items": { "type": "string" } },
+        "coordinates": { 
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "amenities": { "type": "array" },
+        "images": { "type": "array" },
         "rating": { "type": "number" },
         "isVerified": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "policies": { "type": "array" },
+        "contactDetails": {
+          "type": "object",
+          "properties": {
+             "phone": { "type" : "string" },
+             "email": { "type" : "string" },
+             "whatsapp": { "type" : "string" }
+          }
+        },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
       "required": ["managerId", "name", "location", "address", "createdAt"]
     },
     "Room": {
       "title": "Room",
-      "description": "Represents a room within a hostel.",
+      "description": "A room inside a hostel",
       "type": "object",
       "properties": {
         "hostelId": { "type": "string" },
         "roomNumber": { "type": "string" },
-        "type": { "type": "string", "enum": ["1-in-a-room", "2-in-a-room", "3-in-a-room", "4-in-a-room"] },
+        "type": { "type": "string" },
         "pricePerSemester": { "type": "number" },
         "capacity": { "type": "number" },
         "occupiedBeds": { "type": "number" },
-        "isAvailable": { "type": "boolean" }
+        "isAvailable": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
-      "required": ["hostelId", "roomNumber", "type", "pricePerSemester", "capacity", "occupiedBeds", "isAvailable"]
+      "required": ["hostelId", "roomNumber", "type", "pricePerSemester", "capacity", "occupiedBeds"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Hostel review by student",
+      "type": "object",
+      "properties": {
+        "hostelId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["hostelId", "userId", "userName", "rating", "comment", "createdAt"]
     },
     "Booking": {
       "title": "Booking",
-      "description": "Represents a student's reservation.",
+      "description": "Student booking a room",
       "type": "object",
       "properties": {
-        "studentId": { "type": "string" },
-        "studentEmail": { "type": "string" },
         "hostelId": { "type": "string" },
+        "hostelName": { "type": "string" },
         "managerId": { "type": "string" },
         "roomId": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "roomNumber": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "status": { "type": "string" },
         "amount": { "type": "number" },
-        "paymentStatus": { "type": "string", "enum": ["pending", "paid"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "paymentStatus": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "expiresAt": { "type": "string" },
+        "semester": { "type": "string" },
+        "paymentReference": { "type": "string" }
       },
-      "required": ["studentId", "hostelId", "roomId", "status", "amount", "createdAt"]
+      "required": ["hostelId", "roomId", "studentId", "status", "amount", "paymentStatus", "createdAt"]
     },
-    "AppNotification": {
-      "title": "AppNotification",
-      "description": "Represents a system notification for a user.",
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Complaint filed against hostel",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "type": { "type": "string", "enum": ["booking", "system", "complaint", "verification", "inquiry"] },
+        "hostelId": { "type": "string" },
+        "managerId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "image": { "type": "string" },
+        "status": { "type": "string" },
+        "managerResponse": { "type": "string" },
+        "adminVisible": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "resolvedAt": { "type": "string" }
+      },
+      "required": ["userId", "hostelId", "managerId", "title", "message", "status", "createdAt", "updatedAt"]
+    },
+    "Payout": {
+      "title": "Payout",
+      "description": "Payout record for manager",
+      "type": "object",
+      "properties": {
+        "managerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "reference": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["managerId", "amount", "createdAt"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Student inquiry",
+      "type": "object",
+      "properties": {
+        "hostelId": { "type": "string" },
+        "managerId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentEmail": { "type": "string" },
+        "senderPhone": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["hostelId", "managerId", "studentName", "studentEmail", "subject", "message", "status", "createdAt"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Notification",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
         "title": { "type": "string" },
         "message": { "type": "string" },
         "actionUrl": { "type": "string" },
         "isRead": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string" }
       },
       "required": ["userId", "type", "title", "message", "isRead", "createdAt"]
+    },
+    "ManagerVerification": {
+       "title": "ManagerVerification",
+       "description": "Manager details for admin verification",
+       "type": "object",
+       "properties": {
+         "userId": { "type": "string" },
+         "managerName": { "type": "string" },
+         "managerEmail": { "type": "string" },
+         "idDocumentUrl": { "type": "string" },
+         "propertyProofUrl": { "type": "string" },
+         "status": { "type": "string" },
+         "submittedAt": { "type": "string" },
+         "updatedAt": { "type": "string" },
+         "adminNotes": { "type": "string" }
+       },
+       "required": ["userId", "idDocumentUrl", "propertyProofUrl", "status", "submittedAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": "User",
-      "description": "Collection of user profiles."
+      "schema": { "$ref": "User" },
+      "description": "User profiles"
     },
     "/hostels/{hostelId}": {
-      "schema": "Hostel",
-      "description": "Collection of hostels."
+      "schema": { "$ref": "Hostel" },
+      "description": "Hostel listings"
     },
     "/hostels/{hostelId}/rooms/{roomId}": {
-      "schema": "Room",
-      "description": "Subcollection of rooms in a hostel."
+      "schema": { "$ref": "Room" },
+      "description": "Rooms in a hostel"
+    },
+    "/hostels/{hostelId}/reviews/{reviewId}": {
+      "schema": { "$ref": "Review" },
+      "description": "Reviews for a hostel"
     },
     "/bookings/{bookingId}": {
-      "schema": "Booking",
-      "description": "Collection of bookings."
+       "schema": { "$ref": "Booking" },
+       "description": "All bookings"
+    },
+    "/complaints/{complaintId}": {
+       "schema": { "$ref": "Complaint" },
+       "description": "Complaints filed"
+    },
+    "/inquiries/{inquiryId}": {
+       "schema": { "$ref": "Inquiry" },
+       "description": "Inquiries sent to hoste managers"
+    },
+    "/payouts/{payoutId}": {
+       "schema": { "$ref": "Payout" },
+       "description": "Payouts done to managers"
     },
     "/notifications/{notificationId}": {
-      "schema": "AppNotification",
-      "description": "Collection of system notifications for users."
+       "schema": { "$ref": "AppNotification" },
+       "description": "Notifications for users"
+    },
+    "/managerVerifications/{verificationId}": {
+       "schema": { "$ref": "ManagerVerification" },
+       "description": "Verification submissions"
     }
   }
 }

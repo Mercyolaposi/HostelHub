@@ -1,6 +1,7 @@
-import type {NextConfig} from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
@@ -13,27 +14,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**', // This allows any path under the hostname
+        hostname: '**',
       },
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/**',
+        protocol: 'http',
+        hostname: '**',
       },
     ],
   },
@@ -48,8 +33,6 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
-
-import { withSentryConfig } from '@sentry/nextjs';
 
 const configWithSentry = process.env.SENTRY_AUTH_TOKEN 
   ? withSentryConfig(nextConfig, {
