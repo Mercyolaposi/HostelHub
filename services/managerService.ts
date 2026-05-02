@@ -45,20 +45,25 @@ export const submitVerification = async (
 
     const docRef = await addDoc(collection(db, 'managerVerifications'), verificationData);
     
-    // Notify admins
-    const adminsQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
-    const adminsSnapshot = await getDocs(adminsQuery);
-    adminsSnapshot.forEach((adminDoc) => {
-      createNotification(
-        adminDoc.id,
-        'verification',
-        'New Manager Application',
-        `${managerName || 'A new manager'} has submitted verification documents.`,
-        '/admin/verifications'
-      );
-    });
+    // Notify admins (fails if user lacks permission to list admins, so we try-catch it silently)
+    try {
+      const adminsQuery = query(collection(db, 'users'), where('role', '==', 'admin'));
+      const adminsSnapshot = await getDocs(adminsQuery);
+      adminsSnapshot.forEach((adminDoc) => {
+        createNotification(
+          adminDoc.id,
+          'verification',
+          'New Manager Application',
+          `${managerName || 'A new manager'} has submitted verification documents.`,
+          '/admin/verifications'
+        );
+      });
+    } catch (notifyErr) {
+      console.warn("Could not notify admins via client (permissions restricted), skipping.", notifyErr);
+    }
 
     return docRef.id;
+
   } catch (error: any) {
     console.error('Error submitting verification:', error);
     throw new Error(error.message || 'Failed to submit verification');
