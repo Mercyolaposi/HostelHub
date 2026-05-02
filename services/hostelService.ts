@@ -78,22 +78,20 @@ export const getVerifiedHostelsPaginated = async (
 
     if (hostels.length === 0) return { hostels: [], lastVisible: null };
 
-    // Fetch rooms ONLY for these specific hostels
-    const hostelIds = hostels.map(h => h.id);
-    const roomsQuery = query(collectionGroup(db, 'rooms'), where('hostelId', 'in', hostelIds));
-    const roomsSnapshot = await getDocs(roomsQuery);
-    
-    const roomsByHostel: Record<string, Room[]> = {};
-    roomsSnapshot.docs.forEach(doc => {
-      const room = { id: doc.id, ...doc.data() } as Room;
-      if (!roomsByHostel[room.hostelId]) roomsByHostel[room.hostelId] = [];
-      roomsByHostel[room.hostelId].push(room);
-    });
-
-    const hostelsWithRooms = hostels.map(hostel => ({
-      ...hostel,
-      rooms: roomsByHostel[hostel.id!] || []
-    }));
+    // Fetch rooms for each hostel individually to avoid collectionGroup index & permission requirements
+    const hostelsWithRooms = await Promise.all(
+      hostels.map(async (hostel) => {
+        try {
+          const roomsRef = collection(db, 'hostels', hostel.id!, 'rooms');
+          const roomsSnapshot = await getDocs(roomsRef);
+          const rooms = roomsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
+          return { ...hostel, rooms };
+        } catch (err) {
+          console.error(`Failed to fetch rooms for hostel ${hostel.id}`, err);
+          return { ...hostel, rooms: [] };
+        }
+      })
+    );
 
     return { hostels: hostelsWithRooms, lastVisible, rawDocs: querySnapshot.docs };
   } catch (error: any) {

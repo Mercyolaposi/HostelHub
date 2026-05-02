@@ -1,12 +1,15 @@
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '@/lib/firebase-errors';
+'use server';
+
+import { adminDb } from '@/lib/firebase-admin';
 
 export const getAdminStats = async () => {
-  const path = 'users/bookings/hostels';
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized');
+  }
+
   try {
     // Get all users
-    const usersSnapshot = await getDocs(collection(db, 'users'));
+    const usersSnapshot = await adminDb.collection('users').get();
     const totalUsers = usersSnapshot.size;
     let students = 0;
     let managers = 0;
@@ -18,7 +21,7 @@ export const getAdminStats = async () => {
     });
 
     // Get all bookings
-    const bookingsSnapshot = await getDocs(collection(db, 'bookings'));
+    const bookingsSnapshot = await adminDb.collection('bookings').get();
     const totalBookings = bookingsSnapshot.size;
     let confirmedBookings = 0;
     let totalRevenue = 0;
@@ -32,7 +35,7 @@ export const getAdminStats = async () => {
     });
 
     // Get all hostels
-    const hostelsSnapshot = await getDocs(collection(db, 'hostels'));
+    const hostelsSnapshot = await adminDb.collection('hostels').get();
     const totalHostels = hostelsSnapshot.size;
     let verifiedHostels = 0;
 
@@ -61,6 +64,7 @@ export const getAdminStats = async () => {
       }
     };
   } catch (error: any) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.error('Failed to resolve admin stats', error);
+    throw new Error(error.message);
   }
 };
